@@ -389,7 +389,7 @@ function swish(vol = .3) {
   } catch (err) {}
 }
 function motor(on, hz = 20, vol = .22) { // the gun's purr
-  if (on) audioWake(); if (!soundOn || !AC) { mot = null; return; }
+  on = on && soundOn; if (on) audioWake(); if (!AC) { mot = null; return; } // off always reaches the oscillator, sound tool or not
   try {
     if (on) {
       if (!mot) { const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o.type = 'square'; f.type = 'lowpass'; f.frequency.value = 260; g.gain.value = 0; o.connect(f); f.connect(g); g.connect(master); o.start(); mot = { o, g }; }
@@ -509,7 +509,7 @@ function syncRoom() { // a player follows the table's stop and ceiling; a watche
     if (src.ceiling && src.ceiling !== S.ceiling) { S.ceiling = src.ceiling; setCeil(0); }
   } else if (S.stopped && S.stopBy === 'remote') { S.stopBy = 'local'; $('#resume').hidden = false; $('#stoppedBack').hidden = false; $('#stoppedNote').textContent = 'Their screen went away. Ask them before you start again.'; }
 }
-function enterTable() { closeSheet(); ROLE = 'table'; G = null; S.run = null; show('table'); if (location.hash !== '#table') location.hash = 'table'; publish(); cv.focus({ preventScroll: true }); }
+function enterTable() { closeSheet(); if (feeling) stopFeeling(); ROLE = 'table'; G = null; S.run = null; show('table'); if (location.hash !== '#table') location.hash = 'table'; publish(); cv.focus({ preventScroll: true }); }
 $('#role').addEventListener('click', enterTable);
 document.querySelectorAll('.pad[data-set]').forEach(b => {
   const st = SETS[+b.dataset.set]; b.innerHTML = `${glyphSvg(st)}<span>${st.id}</span>`; b.style.setProperty('--pad', st.col);
@@ -554,7 +554,7 @@ function buildView() {
 const num = (x, a, b, d = 0) => { x = +x; return isFinite(x) ? clamp(x, a, b) : d; }, arr = a => Array.isArray(a) ? a : null;
 const flSeen = {}; let flStarted = false, legendOn = null;
 function watchSource() { const p = others('play').filter(q => q.presence.view && typeof q.presence.view === 'object').sort((a, b) => b.updatedAt - a.updatedAt)[0]; return p ? p.presence.view : null; }
-function enterWatch() { closeSheet(); ROLE = 'watch'; G = null; S.run = null; show('watch'); if (location.hash !== '#watch') location.hash = 'watch'; publish(); }
+function enterWatch() { closeSheet(); if (feeling) stopFeeling(); ROLE = 'watch'; G = null; S.run = null; show('watch'); if (location.hash !== '#watch') location.hash = 'watch'; publish(); }
 $('#watch').addEventListener('click', enterWatch);
 $('#full').addEventListener('click', () => { try { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); } catch (err) {} });
 function route() { const h = location.hash; if (h === '#watch') { if (ROLE !== 'watch') enterWatch(); } else if (h === '#table') { if (ROLE !== 'table') enterTable(); } else if (h === '#sense') { if (ROLE !== 'sense') enterSense(); } else if (ROLE !== 'play') lobby(); }
