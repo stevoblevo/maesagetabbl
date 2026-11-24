@@ -39,10 +39,23 @@ One screen works too: stops 01 to 04 need nothing else.
 
 | Path | What |
 |---|---|
-| `web/index.html` | The whole game: one file, no libraries. Also published as a private claude.ai artifact, where it uses the platform's room instead of this server. |
+| `web/index.html` | The whole game: one page, built on Depthfield. Also published as a private claude.ai artifact, where it uses the platform's room instead of this server. |
+| `web/vendor/depthfield-2.3.0/` | Depthfield's `tokens.css`, `bundle.css` and `bundle.js`, copied unchanged from `stevoblevo/depthfield` at 2.3.0. Pinned by copy until the kit publishes versioned builds (family task F2). |
 | `cmd/tabble` | Go. Serves the page over http and https, relays presence between screens over one event stream, and takes a phone's accelerometer. Standard library only. |
 | `internal/breath` | Go. Turns that accelerometer stream into a breath rate, how sure it is, and a settle figure. |
 | `docs/` | Design notes: the games, the suit's oil, cooling and power. |
+
+## Style
+
+The page is built on Depthfield, the night half of the toolkit family: its tokens and themes, its Tool, Drawer, Button, Tag, HudChip, Slider and Toggle, its lamp, stretch type, sense, tone and guardian. The page's own stylesheet is layout only.
+
+- One scene. Each game sits once, on the part of the body it works. Settings live in a sheet ("Table").
+- The receiver's state word is the page's one stretch line: its width is how settled they are.
+- The lamp follows the hand and the room light dims what only reflects. Lit spots keep their own light.
+- The strawberry guardian reviews in one dry line and can be thrown at a stop to start it.
+- A rehearsed state says "rehearsed", a guess says "inferred", a reading says what it read.
+
+Check a change with Taste before anyone reviews it: open the page with `?df-taste`, at desktop and phone width, in night, day and high contrast. It is clean today.
 
 ## Languages
 

@@ -6,6 +6,25 @@ The same file is `web/index.html` here.
 ## The idea
 Each game is one massage technique. The score is the receiver settling, never points.
 
+## Built on Depthfield
+v5 rebuilds the chrome on Depthfield 2.3.0 instead of imitating it.
+
+| Before | Now | Depthfield rule |
+|---|---|---|
+| Five tiles under the picture and three numbered discs on it | Five real buttons on the body, each once: Moles on the blade, Hedgehogs on the low back, Golf on the calf, Call at the hand, Flip at the head | show each thing once, where it is used |
+| A row of settings across the top | A sheet ("Table"): ceiling, room light, screens, high contrast | settings live in a sheet |
+| A hand-written lamp and plucked string | `Depthfield.lamp` and `Depthfield.tone` | ship the kit, do not copy it |
+| The state word in a font-variation hack | `Depthfield.stretch`, the page's one stretch line | width can mean something |
+| "Inferred" on a scripted state | "Rehearsed, not read"; "inferred" only for the kit's guess about the giver's hands | keep rehearsal and inference apart |
+| A truth line on the end card | The strawberry guardian says it | its voice is a reviewer's |
+| Dark only | Night, day and high contrast; the art keeps its night in every face | the art carries its own light |
+
+The room light is new play: dim it and the back fades while lit spots stay bright, because they make their own light.
+
+`Depthfield.taste()` reports nothing at desktop and phone width, in night, day and contrast.
+
+Not done: Storeybrook and Hypermetapunk. The family plan says day looks reward stillness, print looks reward impact and tempo, night looks reward a light source. That maps onto the games (Hedgehogs, Moles, Golf) and is written up as an issue, not built.
+
 ## The body
 The receiver is a height field, seen from above, prone. Every part is a tube along the body: a centre line, a half-width and a height, each a smooth curve through a few measured points (`TORSO`, `LEG`, `ARM` in the page). Parts meet like clay. Shoulder blades, a spine groove and the two glute mounds are added on top.
 

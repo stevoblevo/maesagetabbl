@@ -281,6 +281,27 @@ func (r *Room) samples(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// withRoom puts the room stand-in ahead of the page's own scripts: at the end of the head,
+// or right after the body tag (whatever attributes it carries) when there is no head.
+func withRoom(html []byte) []byte {
+	tag := []byte("<script src=\"/room.js\"></script>\n")
+	at := bytes.Index(html, []byte("</head>"))
+	if at < 0 {
+		if b := bytes.Index(html, []byte("<body")); b >= 0 {
+			if end := bytes.IndexByte(html[b:], '>'); end >= 0 {
+				at = b + end + 1
+			}
+		}
+	}
+	if at < 0 {
+		at = 0
+	}
+	out := make([]byte, 0, len(html)+len(tag))
+	out = append(out, html[:at]...)
+	out = append(out, tag...)
+	return append(out, html[at:]...)
+}
+
 // page serves index.html with the room stand-in loaded ahead of the page's own script.
 func page(web string) http.HandlerFunc {
 	files := http.FileServer(http.Dir(web))
@@ -294,7 +315,7 @@ func page(web string) http.HandlerFunc {
 			http.Error(w, "web/index.html is missing", http.StatusNotFound)
 			return
 		}
-		html = bytes.Replace(html, []byte("<body>"), []byte("<body>\n<script src=\"/room.js\"></script>"), 1)
+		html = withRoom(html)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Write(html)

@@ -1,211 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="peach-night">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maesage Tabble Games</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,400..700&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="vendor/depthfield-2.3.0/tokens.css">
+<link rel="stylesheet" href="vendor/depthfield-2.3.0/bundle.css">
 <style>
-/* Depthfield, peach-night skin. One world, one theme, by choice: the table is a night scene.
-   Layout: one top-down table fills the window. Chrome floats at the corners.
-   The receiver's screen is the lit slot along the bottom edge. */
-:root {
-  color-scheme: dark;
-  --void: #111722; --surface: #161c29; --raised: #1b2230; --line: #2c3444;
-  --ink: #f3ece6; --ink-muted: #a9a3a8;
-  --accent: #ffb48a; --accent-soft: #373033; --on-accent: #111722;
-  --cue: #c9e6ff; --danger: #ff8a7a; --focus: #c9e6ff;
-  --chrome: rgba(27, 34, 48, .86); --scrim: rgba(17, 23, 34, .78);
-  /* the four gun settings are categories, so they take the tag hues */
-  --set-hush: #8ff0d2; --set-wave: #c4a2ff; --set-wake: #f3cf8a; --set-knead: #f29fb0;
-  --lamp: #ffc8a0;
-  --display: "Fraunces", "Iowan Old Style", Georgia, serif;
-  --sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  --stretch: "Anybody", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --dur-fast: 160ms; --dur-base: 420ms; --dur-slow: 900ms;
-  --ease-out: cubic-bezier(.16, 1, .3, 1);
-  --gutter: clamp(16px, 2.4vw, 28px);
-  --slotH: 86px;
-}
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-body { background: var(--void); color: var(--ink); font: 400 17px/1.55 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
-button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
+/* Built on Depthfield 2.3.0 (vendor/depthfield-2.3.0). Colour, type, motion and components are the kit's.
+   This sheet is only the table's own layout: one scene, chrome at the corners, settings in a sheet,
+   the receiver's screen as the slot along the bottom edge. The art keeps its night in every face. */
+:root { --slotH: 84px; }
+html, body { height: 100%; }
+body { overflow: hidden; }
+[hidden] { display: none !important; }
 #table { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+#table:focus-visible { outline: var(--border-focus) solid var(--focus); outline-offset: -4px; }
 
-.eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 12px/16px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); margin: 0; font-variant-numeric: tabular-nums; }
-#head { position: fixed; left: var(--gutter); top: clamp(14px, 2vw, 24px); max-width: min(34rem, calc(100vw - 2 * var(--gutter))); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-#title { margin: 0; font: 300 clamp(30px, 4.4vw, 58px)/1 var(--display); font-variation-settings: "opsz" 72; letter-spacing: -.02em; text-wrap: balance; max-width: 13em; text-shadow: 0 2px 24px rgba(17, 23, 34, .9); }
-#title em { font-style: italic; color: var(--accent); }
+#head { position: fixed; z-index: var(--z-content); left: var(--scene-gutter); top: var(--scene-gutter); max-width: min(34rem, calc(100vw - 2 * var(--scene-gutter))); display: flex; flex-direction: column; gap: var(--space-2); pointer-events: none; }
+#title { font-size: clamp(30px, 4.4vw, 58px); max-width: 13em; }
 body.playing #title { font-size: clamp(24px, 3vw, 40px); }
 body.calling #title { font-size: clamp(36px, 6vw, 76px); }
-#hint { margin: 0; font: 400 13px/18px var(--mono); color: var(--cue); max-width: 46ch; text-shadow: 0 1px 12px rgba(17, 23, 34, .95); font-variant-numeric: tabular-nums; }
-#legend { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 12px/16px var(--mono); letter-spacing: .04em; color: var(--ink-muted); }
-#legend li { display: flex; align-items: center; gap: 6px; }
-#legend svg { width: 14px; height: 14px; flex: none; }
-#legend b { font-weight: 500; }
+#hint { max-width: 46ch; font-variant-numeric: tabular-nums; }
+#legend { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+#legend svg { width: 13px; height: 13px; flex: none; }
+#legend .df-tag::before { display: none; } /* the glyph is the dot here: it is what the spot on the back shows */
+#legend [aria-current] { outline: 1.5px solid var(--c); outline-offset: 2px; }
+#legend [aria-current]::after { content: "· their lean"; }
 
-#tools { position: fixed; right: var(--gutter); top: clamp(14px, 2vw, 24px); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 52vw; }
-.tool { min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 10px; background: var(--chrome); border: 1px solid var(--line); border-radius: 999px; font: 500 12px/16px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); backdrop-filter: blur(10px); transition: border-color var(--dur-fast); }
-button.tool:hover { border-color: var(--ink-muted); }
-.tool.ceil { padding: 0 4px; gap: 2px; }
-.tool.ceil button { width: 36px; height: 36px; border-radius: 999px; font: 500 16px/1 var(--mono); color: var(--ink); }
-.tool.ceil button:hover { background: var(--surface); }
-.tool.ceil span { padding: 0 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#tools { position: fixed; z-index: var(--z-chrome); right: var(--scene-gutter); top: var(--scene-gutter); display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--space-2); max-width: 60vw; }
 
-#stops { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; align-items: stretch; }
-#senseBar { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: flex; }
-#senseBar .primary { min-height: 60px; flex: 1; font-size: 17px; }
-.primary:disabled { opacity: .6; cursor: default; box-shadow: none; }
-#pads { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.pad { min-height: 60px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--chrome); border: 1.5px solid var(--line); border-radius: 10px; font: 500 12px/16px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); backdrop-filter: blur(10px); }
+/* the lobby: each game sits on the part of the body it works, once */
+#stops { position: fixed; inset: 0; z-index: var(--z-hotspot); pointer-events: none; }
+.spot { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; display: grid; place-items: center; width: var(--size-target); height: var(--size-target); padding: 0; border-radius: var(--radius-pill); border: var(--border-hair) solid var(--art-ink-muted); background: color-mix(in srgb, var(--art-void) 82%, transparent); color: var(--art-ink); cursor: pointer; transition: border-color var(--dur-fast), color var(--dur-fast); }
+.spot svg { width: 22px; height: 22px; }
+.spot:hover, .spot:focus-visible { border-color: var(--art-cue); color: var(--art-cue); }
+.spot:focus-visible { outline: var(--border-focus) solid var(--art-cue); outline-offset: var(--border-focus-offset-art); }
+.spot__t { position: absolute; display: grid; white-space: nowrap; pointer-events: none; font: 400 12px/16px var(--font-mono); color: var(--art-ink-muted); text-shadow: var(--shadow-type-lede); }
+.spot__t b { font: 400 22px/26px var(--df-display); color: var(--art-ink); }
+.spot[data-side="up"] .spot__t { bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); text-align: center; }
+.spot[data-side="down"] .spot__t { top: calc(100% + 6px); left: 50%; transform: translateX(-50%); text-align: center; }
+.spot[data-side="right"] .spot__t { left: calc(100% + 10px); top: 50%; transform: translateY(-50%); }
+.spot[data-side="left"] .spot__t { right: calc(100% + 10px); top: 50%; transform: translateY(-50%); text-align: right; }
+
+#bar, #pads, #senseBar { position: fixed; z-index: var(--z-hud); left: var(--scene-gutter); right: var(--scene-gutter); bottom: calc(var(--slotH) + var(--space-3)); }
+#bar { display: flex; pointer-events: none; }
+#bar .df-btn { pointer-events: auto; min-width: 9rem; }
+#pads { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+.pad { min-height: 60px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--surface-raised); border: 1.5px solid var(--line); border-radius: var(--radius-md); font: 500 12px/16px var(--font-mono); letter-spacing: .06em; color: var(--ink-muted); cursor: pointer; box-shadow: var(--shadow-float); }
 .pad svg { width: 20px; height: 20px; }
-.pad[aria-pressed="true"] { border-color: currentColor; background: var(--raised); color: var(--pad, var(--ink)); }
-.stop { text-align: left; padding: 12px 14px; min-height: 44px; background: var(--chrome); border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 2px; align-items: baseline; backdrop-filter: blur(10px); transition: border-color var(--dur-fast), background var(--dur-fast); }
-.stop:hover, .stop:focus-visible { border-color: var(--ink-muted); background: var(--raised); }
-.stop .num { font: 500 12px/16px var(--mono); letter-spacing: .08em; color: var(--ink-muted); }
-.stop .name { font: 400 21px/26px var(--display); font-variation-settings: "opsz" 36; }
-.stop .what { grid-column: 1 / -1; font: 400 14px/20px var(--sans); color: var(--ink-muted); }
-.primary { min-height: 44px; padding: 0 30px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 600 15px/20px var(--sans); align-self: center; transition: box-shadow var(--dur-fast); }
-.primary:hover { box-shadow: 0 0 48px rgba(255, 180, 138, .35); }
-.quiet { min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--ink-muted); font: 500 14px/20px var(--sans); }
-.quiet:hover { background: var(--surface); }
+.pad[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
+#senseBar { display: flex; }
+#senseBar .df-btn { flex: 1; min-height: 60px; }
 
-#slot { position: fixed; left: 0; right: 0; bottom: 0; height: var(--slotH); padding: 0 var(--gutter); background: var(--raised); border-top: 1px solid var(--line); display: flex; align-items: center; gap: clamp(14px, 3vw, 40px); box-shadow: 0 -18px 48px rgba(0, 0, 0, .35); }
+#slot { position: fixed; z-index: var(--z-chrome); left: 0; right: 0; bottom: 0; height: var(--slotH); padding: 0 var(--scene-gutter); background: var(--surface-raised); border-top: var(--border-hair) solid var(--line); display: flex; align-items: center; gap: clamp(12px, 2.2vw, 28px); }
 #slot .who { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
-#word { font: 600 34px/38px var(--stretch); font-variation-settings: "wdth" var(--w, 60); text-transform: lowercase; white-space: nowrap; transition: font-variation-settings var(--dur-slow) var(--ease-out); }
-.cell { display: flex; flex-direction: column; gap: 6px; flex: none; }
-.cell .v { font: 400 13px/18px var(--mono); letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
-.cell .v svg { width: 14px; height: 14px; }
-.meter { width: clamp(90px, 14vw, 180px); height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; }
-body.nocam #slot .cell { display: none; }
-#title em, .meter i, .primary { transition: color var(--dur-slow), background-color var(--dur-slow), width var(--dur-base) var(--ease-out), box-shadow var(--dur-fast); }
+#who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+#word { font-size: 34px; line-height: 38px; font-weight: 600; text-transform: lowercase; white-space: nowrap; }
+#slot .df-hudchip, #slot .df-progress { box-shadow: none; background: var(--surface); flex: none; white-space: nowrap; }
 #trace { width: 96px; height: 26px; flex: none; }
+#stop { flex: none; min-width: 96px; min-height: 56px; border-radius: var(--radius-md); border-color: var(--ink); }
+body.nocam #slot .live { display: none; }
+
+#card { position: fixed; z-index: var(--z-overlay); right: var(--scene-gutter); top: 50%; transform: translateY(-58%); width: min(26rem, calc(100vw - 2 * var(--scene-gutter))); box-sizing: border-box; padding: var(--space-6); background: var(--surface-raised); border: var(--border-hair) solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-float); display: flex; flex-direction: column; gap: var(--space-3); }
+#cardWord { margin: 0; font: italic 400 clamp(44px, 8vw, 64px)/1 var(--df-display); color: var(--ink); }
+#cardLines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font: 400 13px/20px var(--font-mono); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+#cardLines b { color: var(--ink); font-weight: 500; }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
+
+.veil { position: fixed; z-index: var(--z-overlay); inset: 0; background: var(--scrim); -webkit-backdrop-filter: blur(var(--blur-backdrop)); backdrop-filter: blur(var(--blur-backdrop)); display: flex; align-items: center; padding: var(--scene-gutter); }
+.veil > div { max-width: 30rem; display: flex; flex-direction: column; gap: var(--space-3); }
+
+#sheet .note { margin: calc(var(--space-3) * -1) 0 0; font: 400 13px/18px var(--font-mono); color: var(--ink-muted); }
+#sheet button.df-drawer__item { width: 100%; text-align: left; background: none; border: 0; font: 400 15px/20px var(--font-sans); cursor: pointer; }
+#sheet .df-drawer__item small { display: block; font: 400 13px/18px var(--font-sans); color: var(--ink-muted); }
+#sheet .df-slider span { color: var(--ink-muted); font: 400 13px/18px var(--font-mono); }
+
 body.watching { --slotH: 116px; }
 body.watching #tools > :not(#leave):not(#full), body.watching #stop { display: none; }
 body.watching #word { font-size: 60px; line-height: 64px; }
 body.watching #trace { width: 220px; height: 44px; }
-body.watching .cell .v { font-size: 16px; }
 body.watching #hint { font-size: 15px; line-height: 21px; max-width: 60ch; }
-@media (max-width: 1040px) { .opt2 { display: none; } }
-.meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width var(--dur-base) var(--ease-out); }
-#stop { flex: none; min-width: 96px; min-height: 56px; padding: 0 22px; border-radius: 10px; border: 1.5px solid var(--ink); background: var(--void); font: 600 15px/20px var(--sans); letter-spacing: .02em; }
-#stop:hover { background: var(--ink); color: var(--void); }
-
-.card { position: fixed; right: var(--gutter); top: 50%; transform: translateY(-58%); width: min(26rem, calc(100vw - 2 * var(--gutter))); padding: 26px 26px 22px; background: var(--raised); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 64px rgba(0, 0, 0, .5); display: flex; flex-direction: column; gap: 14px; }
-.card[hidden], .veil[hidden], [hidden] { display: none !important; }
-#cardWord { margin: 0; font: 600 clamp(44px, 9vw, 68px)/1 var(--stretch); font-variation-settings: "wdth" var(--w, 60); text-transform: lowercase; }
-#cardLines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font: 400 13px/20px var(--mono); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-#cardLines b { color: var(--ink); font-weight: 500; }
-#cardTruth { margin: 0; font: 400 15px/23px var(--sans); }
-.row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-
-.veil { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); display: flex; align-items: center; padding: var(--gutter); }
-.veil > div { max-width: 30rem; display: flex; flex-direction: column; gap: 14px; }
-.veil h2 { margin: 0; font: 300 clamp(48px, 9vw, 96px)/.95 var(--display); font-variation-settings: "opsz" 144; letter-spacing: -.025em; }
-.veil p { margin: 0; font: 400 clamp(18px, 2vw, 21px)/1.5 var(--sans); }
-
+@media (max-width: 1040px) { .opt2 { display: none !important; } }
 @media (max-width: 760px) {
   :root { --slotH: 78px; }
-  #stops { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .stop { padding: 9px 12px; }
-  .stop .what { display: none; }
-  .stop .name { font-size: 19px; line-height: 24px; }
-  #begin { justify-self: stretch; align-self: stretch; }
-  #tools { max-width: none; left: var(--gutter); gap: 6px; }
-  #watch { display: none; }
-  .tool { padding: 0 11px; letter-spacing: .05em; }
-  .tool.ceil button { width: 32px; }
-  .opt { display: none; }
+  #tools { max-width: none; left: var(--scene-gutter); }
+  .opt { display: none !important; }
   #word { font-size: 26px; line-height: 30px; }
-  #stop { min-width: 78px; padding: 0 14px; }
+  #stop { min-width: 78px; }
+  #slot .who { min-width: 8.6rem; }
+  #meter > span:first-child { display: none; }
+  #meter .df-progress__track { width: 44px; }
+  #meter { padding-inline: var(--space-3); gap: var(--space-2); }
+  #title { font-size: 26px; }
+  .spot { width: 38px; height: 38px; }
+  .spot svg { width: 19px; height: 19px; }
+  .spot__t { font-size: 11px; line-height: 14px; }
   #hint { max-width: 40ch; }
-  .card { top: auto; bottom: calc(var(--slotH) + 14px); transform: none; }
+  .spot__t b { font-size: 18px; line-height: 22px; }
+  #card { top: auto; bottom: calc(var(--slotH) + var(--space-3)); transform: none; }
 }
-@media (max-height: 520px) { .stop .what { display: none; } #title { font-size: clamp(24px, 3.4vw, 36px); } }
-@media (prefers-reduced-motion: reduce) { * { transition-duration: 1ms !important; } }
+@media (max-height: 520px) { #title { font-size: clamp(24px, 3.4vw, 36px); } }
 </style>
 </head>
-<body>
+<body class="df-page df-no-js">
+<i id="night" data-theme="peach-night" hidden></i>
 <canvas id="table" tabindex="0" aria-label="The table, seen from above. Arrow keys move the hand. Hold Space to press."></canvas>
 
-<header id="head">
-  <p class="eyebrow" id="eyebrow">Maesage · the Tabble</p>
-  <h1 id="title">One lays on the table and the other… <em>plays</em>.</h1>
-  <p id="hint" aria-live="polite">Pick a stop on the body, or begin and play all three down the back.</p>
+<header id="head" class="df-over-art">
+  <div class="df-chapter">
+    <span class="df-chapter__eyebrow" id="eyebrow">Maesage · the Tabble</span>
+    <h2 class="df-h-m" id="title">One lays on the table and the other… <em>plays</em>.</h2>
+  </div>
+  <p class="df-hint" id="hint" aria-live="polite">Press a stop on the back, or throw the strawberry at one. Begin plays 01 to 03 down the back.</p>
   <ul id="legend" hidden aria-label="Gun settings"></ul>
 </header>
 
 <div id="tools">
-  <button class="tool" id="sound" aria-pressed="false">Sound off</button>
-  <div class="tool ceil" role="group" aria-label="The receiver's ceiling">
-    <button id="ceilDn" aria-label="Lower the ceiling">&minus;</button>
-    <span id="ceil">Ceiling 3 / 4</span>
-    <button id="ceilUp" aria-label="Raise the ceiling">+</button>
-  </div>
-  <button class="tool" id="role">On the table</button>
-  <button class="tool" id="watch">Watch</button>
-  <button class="tool" id="sense" hidden>Feel breath</button>
-  <button class="tool" id="full" hidden>Full screen</button>
-  <button class="tool" id="leave" hidden>Leave</button>
+  <span class="df-hudchip df-hudchip--keep opt2" id="hands"></span>
+  <button class="df-tool df-tool--solid" type="button" data-df-tool="sound"><span data-df-icon="sound-off" data-size="16"></span><b class="df-tool__label">Sound off</b></button>
+  <button class="df-tool df-tool--solid" type="button" data-df-tool="face" aria-label="Switch between night and day"><span data-df-icon="sun" data-size="16"></span><b class="df-tool__label">Day</b></button>
+  <button class="df-tool df-tool--solid" type="button" id="sheetOpen" data-df-open="#sheet" aria-haspopup="dialog" aria-controls="sheet" aria-label="Table settings"><span data-df-icon="menu" data-size="16"></span><b class="df-tool__label">Table</b></button>
+  <button class="df-tool df-tool--solid df-tool--keep-label" type="button" id="leave" aria-label="Leave this game" hidden><span data-df-icon="chevron-left" data-size="16"></span><b class="df-tool__label">Leave</b></button>
+  <button class="df-tool df-tool--solid df-tool--keep-label" type="button" id="full" aria-label="Full screen" hidden><span data-df-icon="expand" data-size="16"></span><b class="df-tool__label">Full screen</b></button>
 </div>
 
 <nav id="stops" aria-label="Games">
-  <button class="stop" data-game="moles"><span class="num">01</span><span class="name">Moles</span><span class="what">The gun tunes itself over a lit spot. Hold to percuss.</span></button>
-  <button class="stop" data-game="hogs"><span class="num">02</span><span class="name">Hedgehogs</span><span class="what">Knots with legs. Slow circles curl them up.</span></button>
-  <button class="stop" data-game="golf"><span class="num">03</span><span class="name">Golf</span><span class="what">One long glide a stroke. The cup is the knot.</span></button>
-  <button class="stop" data-game="call"><span class="num">04</span><span class="name">Call</span><span class="what">Real table, real hands. The screen calls the spots.</span></button>
-  <button class="stop" data-game="flip"><span class="num">05</span><span class="name">Flip</span><span class="what">They place the spots from the table. You answer.</span></button>
-  <button class="primary" id="begin">Begin</button>
+  <button class="spot" type="button" data-game="moles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg><span class="spot__t"><b>Moles</b>01 · the gun</span></button>
+  <button class="spot" type="button" data-game="hogs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 15.5a7.5 6.5 0 0 1 15 0z"/><path d="M7.6 9.6 6.4 7.2M11 8.4l-.5-2.8M14.4 8.8l.9-2.6M17.2 10.8l1.7-1.9"/></svg><span class="spot__t"><b>Hedgehogs</b>02 · slow circles</span></button>
+  <button class="spot" type="button" data-game="golf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 20V4l9 3.5L8 11"/><path d="M5 20h7"/></svg><span class="spot__t"><b>Golf</b>03 · long glides</span></button>
+  <button class="spot" type="button" data-game="call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 12.5V6.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V11m0-3.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.6a5 5 0 0 1-4.3-2.4L5.4 14.3a1.4 1.4 0 0 1 2.3-1.6z"/></svg><span class="spot__t"><b>Call</b>04 · real hands</span></button>
+  <button class="spot" type="button" data-game="flip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h13l-3-3M19 15H6l3 3"/></svg><span class="spot__t"><b>Flip</b>05 · they call it</span></button>
 </nav>
+<div id="bar"><button class="df-btn df-btn--primary" type="button" id="begin">Begin</button></div>
 
 <nav id="pads" hidden aria-label="What you want, and where">
-  <button class="pad" data-set="0" aria-pressed="true"></button>
-  <button class="pad" data-set="1" aria-pressed="false"></button>
-  <button class="pad" data-set="2" aria-pressed="false"></button>
-  <button class="pad" data-set="3" aria-pressed="false"></button>
-  <button class="pad" id="trick" aria-pressed="false">Trick off</button>
+  <button class="pad" type="button" data-set="0" aria-pressed="true"></button>
+  <button class="pad" type="button" data-set="1" aria-pressed="false"></button>
+  <button class="pad" type="button" data-set="2" aria-pressed="false"></button>
+  <button class="pad" type="button" data-set="3" aria-pressed="false"></button>
+  <button class="pad" type="button" id="trick" aria-pressed="false">Trick off</button>
 </nav>
 
 <nav id="senseBar" hidden aria-label="This phone as a sensor">
-  <button class="primary" id="feel">Start feeling</button>
+  <button class="df-btn df-btn--primary" type="button" id="feel">Start feeling</button>
 </nav>
 
 <footer id="slot" aria-label="The receiver's screen">
   <div class="who">
-    <p class="eyebrow" id="who">Receiver · inferred</p>
-    <div id="word">caffeinated</div>
+    <span class="df-eyebrow" id="who">Receiver · rehearsed</span>
+    <h1 class="df-h-stretch" id="word">caffeinated</h1>
   </div>
-  <div class="cell opt"><p class="eyebrow">Breath</p><div class="v"><canvas id="trace" width="440" height="88" aria-hidden="true"></canvas><span id="breath">19 / min</span></div></div>
-  <div class="cell opt"><p class="eyebrow">Leans</p><div class="v" id="leans">hush</div></div>
-  <div class="cell opt opt2"><p class="eyebrow">Weather</p><div class="v" id="wx">red rain</div></div>
-  <div class="cell"><p class="eyebrow">Settled <span id="pct">022%</span></p><div class="meter" role="progressbar" aria-label="Settled" aria-valuemin="0" aria-valuemax="100" id="meter"><i></i></div></div>
-  <button id="stop" aria-label="Stop. Lights out and gun off.">Stop</button>
+  <canvas id="trace" class="live opt" width="440" height="88" aria-hidden="true"></canvas>
+  <span class="df-hudchip df-hudchip--keep live opt">breath <b id="breath">19</b> / min</span>
+  <span class="df-hudchip df-hudchip--keep live opt2">weather <b id="wx">red rain</b></span>
+  <div class="df-progress live" id="meter" role="progressbar" aria-label="Settled" aria-valuemin="0" aria-valuemax="100"><span>settled</span><span class="df-progress__track"><span class="df-progress__fill"></span></span><span id="pct">022%</span></div>
+  <button class="df-btn df-btn--ghost" type="button" id="stop" aria-label="Stop. Lights out and gun off.">Stop</button>
 </footer>
 
-<section class="card" id="card" hidden role="dialog" aria-labelledby="cardEyebrow">
-  <p class="eyebrow" id="cardEyebrow"></p>
+<section id="card" hidden role="dialog" aria-labelledby="cardEyebrow">
+  <p class="df-eyebrow" id="cardEyebrow"></p>
   <p id="cardWord"></p>
   <ul id="cardLines"></ul>
-  <p id="cardTruth"></p>
-  <div class="row"><button class="primary" id="again">Play again</button><button class="quiet" id="back">Back to the table</button></div>
+  <div class="row"><button class="df-btn df-btn--primary" type="button" id="again">Play again</button><button class="df-btn df-btn--ghost" type="button" id="back">Back to the table</button></div>
 </section>
 
 <div class="veil" id="stopped" hidden role="alertdialog" aria-labelledby="stoppedT">
   <div>
-    <p class="eyebrow">The receiver said stop</p>
-    <h2 id="stoppedT">Stopped.</h2>
-    <p id="stoppedNote">Lights out, gun off. Only the person on the table starts it again.</p>
-    <div class="row"><button class="primary" id="resume">Receiver: resume</button><button class="quiet" id="stoppedBack">Back to the table</button></div>
+    <h2 class="df-h-l" id="stoppedT">Stopped.</h2>
+    <p class="df-lede" id="stoppedNote">Lights out, gun off. Only the person on the table starts it again.</p>
+    <div class="row"><button class="df-btn df-btn--primary" type="button" id="resume">Receiver: resume</button><button class="df-btn df-btn--ghost" type="button" id="stoppedBack">Back to the table</button></div>
   </div>
 </div>
 
+<div class="df-drawer" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT" hidden>
+  <div class="df-drawer__panel">
+    <div class="df-drawer__head"><h2 id="sheetT">The table</h2><button class="df-tool df-tool--round" type="button" data-df-close aria-label="Close"><span data-df-icon="close" data-size="16"></span></button></div>
+    <p class="df-eyebrow">Receiver</p>
+    <div class="df-slider"><div class="df-slider__row"><label for="ceilIn">Ceiling</label><span id="ceilOut">3 of 4</span></div><input type="range" id="ceilIn" min="1" max="4" step="1" value="3"></div>
+    <p class="note">The gun never goes above this. It belongs to the person on the table.</p>
+    <p class="df-eyebrow">Room</p>
+    <div class="df-slider"><div class="df-slider__row"><label for="roomIn">Room light</label><span id="roomOut">85%</span></div><input type="range" id="roomIn" min="0.2" max="1" step="0.01" value="0.85"></div>
+    <p class="note">Dim the room and the back fades. Lit spots do not: they make their own light.</p>
+    <p class="df-eyebrow">Screens</p>
+    <div class="df-drawer__list">
+      <button class="df-drawer__item" type="button" id="role"><span class="df-n">i</span><span>On the table<small>This screen goes under the face. You place the spots.</small></span><span class="df-go">→</span></button>
+      <button class="df-drawer__item" type="button" id="watch"><span class="df-n">ii</span><span>Watch<small>A television follows whoever is playing.</small></span><span class="df-go">→</span></button>
+      <button class="df-drawer__item" type="button" id="sense" hidden><span class="df-n">iii</span><span>Feel breath<small>This phone lies on their back and reads them.</small></span><span class="df-go">→</span></button>
+    </div>
+    <p class="note" id="screensNote">No other screen has this page open.</p>
+    <p class="df-eyebrow">Look</p>
+    <label class="df-toggle"><input type="checkbox" role="switch" id="contrastIn"> High contrast</label>
+  </div>
+</div>
+
+<script src="vendor/depthfield-2.3.0/bundle.js"></script>
 <script>
 (() => {
 'use strict';
@@ -215,18 +204,26 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b
 const rnd = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const pad = (n, w) => String(Math.round(n)).padStart(w, '0');
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const probe = $('#night'), css = n => getComputedStyle(probe).getPropertyValue(n).trim(); // the art reads the night inks in every face
 const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const C = { void: css('--void'), surface: css('--surface'), raised: css('--raised'), line: css('--line'), ink: css('--ink'), muted: css('--ink-muted'), accent: css('--accent'), cue: css('--cue'), danger: css('--danger'), lamp: css('--lamp') };
-const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+const mixHex = (a, b, t) => { const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), m = sh => Math.round(lerp(x >> sh & 255, y >> sh & 255, t)); return '#' + ((1 << 24) | (m(16) << 16) | (m(8) << 8) | m(0)).toString(16).slice(1); };
+const hex6 = (v, d) => /^#[0-9a-f]{6}$/i.test(v) ? v : d;
+const C = {}, CH = {}; // C: inks for the art. CH: inks for chrome that is drawn on a canvas (the breath trace).
+function readColors() {
+  C.void = hex6(css('--art-void'), '#111722'); C.ink = hex6(css('--art-ink'), '#f3ece6'); C.muted = hex6(css('--art-ink-muted'), '#a9a3a8'); C.cue = hex6(css('--art-cue'), '#c9e6ff'); C.danger = hex6(css('--danger'), '#ff8a7a'); C.lamp = hex6(css('--lamp'), '#ffc8a0');
+  C.surface = mixHex(C.void, C.ink, .045); C.raised = mixHex(C.void, C.ink, .1); C.line = mixHex(C.void, C.ink, .17); if (!C.accent) C.accent = hex6(css('--peach'), '#ffb48a');
+  const root = getComputedStyle(document.documentElement); CH.muted = root.getPropertyValue('--ink-muted').trim() || C.muted;
+}
+readColors();
+const MONO = css('--font-mono') || 'ui-monospace, Menlo, monospace';
 
 /* ---------- the four settings: colour is the setting, the glyph says it twice ---------- */
 const SETS = [
-  { id: 'hush', hz: '12 Hz', f: 12, level: 1, hold: .95, col: css('--set-hush'), hands: 'Feather. Fingertips, barely there.' },
-  { id: 'wave', hz: '18–32 Hz', f: 24, level: 2, hold: .8, col: css('--set-wave'), hands: 'Glide. Long strokes, flat palm.' },
-  { id: 'wake', hz: '40 Hz', f: 40, level: 3, hold: .5, col: css('--set-wake'), hands: 'Tap. Loose fists, light and quick.' },
-  { id: 'knead', hz: '28 Hz', f: 28, level: 4, hold: 1.1, col: css('--set-knead'), hands: 'Knead. Slow circles, thumbs.' },
+  { id: 'hush', hz: '12 Hz', f: 12, level: 1, hold: .95, col: hex6(css('--tag-sea'), '#8ff0d2'), hands: 'Feather. Fingertips, barely there.' },
+  { id: 'wave', hz: '18–32 Hz', f: 24, level: 2, hold: .8, col: hex6(css('--tag-violet'), '#c4a2ff'), hands: 'Glide. Long strokes, flat palm.' },
+  { id: 'wake', hz: '40 Hz', f: 40, level: 3, hold: .5, col: hex6(css('--tag-gold'), '#f3cf8a'), hands: 'Tap. Loose fists, light and quick.' },
+  { id: 'knead', hz: '28 Hz', f: 28, level: 4, hold: 1.1, col: hex6(css('--tag-rose'), '#f29fb0'), hands: 'Knead. Slow circles, thumbs.' },
 ];
 const GLYPH = {
   hush: '<circle cx="8" cy="8" r="2.4" fill="currentColor"/>',
@@ -235,7 +232,8 @@ const GLYPH = {
   knead: '<circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/>',
 };
 const glyphSvg = s => `<svg viewBox="0 0 16 16" aria-hidden="true" style="color:${s.col}">${GLYPH[s.id]}</svg>`;
-$('#legend').innerHTML = SETS.map(s => `<li>${glyphSvg(s)}<b style="color:${s.col}">${s.id}</b> ${s.hz}</li>`).join('');
+const TONE = { hush: ' df-tag--sea', wave: ' df-tag--violet', wake: '', knead: ' df-tag--rose' }; // Tag tones, one meaning each: the four settings
+$('#legend').innerHTML = SETS.map(s => `<li class="df-tag${TONE[s.id]}" data-set="${s.id}">${glyphSvg(s)}${s.id} ${s.hz}</li>`).join('');
 
 /* ---------- the receiver as a place: a height field, drawn as contour lines ---------- */
 // body space: x runs head (-) to feet (+), y is across. Prone, so their left is +y.
@@ -322,8 +320,8 @@ function layout() {
   cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr);
   tall = Hh > W * 1.05;
   const small = W <= 760, toolsB = $('#tools').getBoundingClientRect().bottom;
-  $('#head').style.top = small ? (toolsB + 10) + 'px' : '';
-  const head = $('#head').getBoundingClientRect(), slot = $('#slot').offsetHeight, bar = [$('#stops'), $('#pads'), $('#senseBar')].find(b => !b.hidden) || null;
+  $('#head').style.top = small ? (toolsB + 12) + 'px' : '';
+  const head = $('#head').getBoundingClientRect(), slot = $('#slot').offsetHeight, bar = [$('#bar'), $('#pads'), $('#senseBar')].find(b => !b.hidden) || null;
   const stopsH = bar ? bar.offsetHeight + 14 : 0;
   const top = head.bottom + 10, bot = Hh - slot - stopsH - 14;
   if (tall) { s = Math.min(W * .96 / .98, (bot - top) / 2.02); cx = W / 2; cy = (top + bot) / 2 - .015 * s; }
@@ -333,12 +331,13 @@ function layout() {
     if (sA > s * 1.04) { s = sA; cx = head.right + 22 + 1.0 * s; cy = (topA + bot) / 2; }
   }
   s = Math.max(s, 90);
+  for (const b of document.querySelectorAll('.spot')) { const q = STOPS.find(k => k.g === b.dataset.game), [x, y] = toS(q.x, q.y); b.style.left = x + 'px'; b.style.top = y + 'px'; b.dataset.side = tall ? q.tall : q.wide; }
 }
 addEventListener('resize', layout);
 
 /* ---------- the hand ---------- */
 const P = { x: -999, y: -999, bx: 9, by: 9, down: false, inside: false, speed: 0, lt: 0 };
-const L = { x: 0, y: 0 }; // the lamp lags the hand
+const L = { x: 0, y: 0 }; let lamp = null, ROOM = .85, guardian = null, stretch = null, lastSaid = -99; // Depthfield's lamp, guardian and stretch type, made at boot
 function moveTo(px, py, now) {
   const [bx, by] = toB(px, py), dt = Math.max(.004, (now - P.lt) / 1000);
   if (P.inside) P.speed = lerp(P.speed, hyp(bx - P.bx, by - P.by) / dt, .35);
@@ -349,7 +348,7 @@ function press() {
   if (S.stopped) return; P.down = true; audioWake();
   if (S.screen === 'table') { placeCue(); return; }
   if (S.screen === 'sense') return;
-  if (S.screen === 'lobby') { const st = STOPS.find(q => hyp(P.bx - q.x, P.by - q.y) < .1); if (st) { S.run = null; start(st.g); } return; }
+  if (S.screen === 'lobby') return; // the stops are buttons
   if (!G || G.over) return;
   if (G.kind === 'call') { nextCall(); return; }
   if (G.kind === 'golf') { const b = G.ball; if (!b.moving && !G.wait && hyp(P.bx - b.x, P.by - b.y) < .15) G.aim = { x0: P.bx, y0: P.by, x1: P.bx, y1: P.by, t0: performance.now() }; }
@@ -376,27 +375,12 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { if (e.key.startsWith('Arrow')) K[e.key] = false; if (e.key === ' ' || e.key === 'Enter') { if (P.down) release(); } });
 
 /* ---------- sound: off until asked ---------- */
-let AC = null, master = null, soundOn = false, mot = null;
-function audioWake() { if (soundOn && AC && AC.state === 'suspended') AC.resume().catch(() => {}); }
-$('#sound').addEventListener('click', () => {
-  soundOn = !soundOn;
-  try { if (soundOn && !AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = .5; master.connect(AC.destination); } if (AC) (soundOn ? AC.resume() : AC.suspend()).catch(() => {}); } catch (err) { soundOn = false; }
-  $('#sound').textContent = soundOn ? 'Sound on' : 'Sound off'; $('#sound').setAttribute('aria-pressed', soundOn);
-  if (soundOn) pluck(2, .5);
-});
-const BP = [0, 2, 4, 6, 8, 10, 13]; // Bohlen–Pierce degrees, thirteen steps to the tritave
-function pluck(k, vol = .5) {
-  if (!soundOn || !AC) return;
-  try {
-    const f = 123.6 * Math.pow(3, (BP[((k % 7) + 7) % 7] + 13 * Math.floor(k / 7)) / 13), sr = AC.sampleRate, N = Math.max(8, Math.round(sr / f)), len = Math.round(sr * 1.3);
-    const buf = AC.createBuffer(1, len, sr), d = buf.getChannelData(0), ring = new Float32Array(N);
-    for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
-    for (let i = 0; i < len; i++) { const a = i % N, b = (i + 1) % N; d[i] = ring[a]; ring[a] = .996 * .5 * (ring[a] + ring[b]); }
-    const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = buf; g.gain.value = vol * .6; src.connect(g); g.connect(master); src.start();
-  } catch (err) {}
-}
+let AC = null, master = null, soundOn = false, mot = null; // the kit owns the switch and the plucked string; the gun's purr and the glide are this page's
+function audioWake() { if (!soundOn) return; try { if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = .5; master.connect(AC.destination); } if (AC.state === 'suspended') AC.resume().catch(() => {}); } catch (err) {} }
+addEventListener('df:sound', e => { soundOn = !!(e.detail && e.detail.on); Depthfield.tone.enable(soundOn); if (soundOn) { audioWake(); pluck(2, .5); } else motor(false); });
+function pluck(k, vol = .5) { if (soundOn) Depthfield.tone.pluck(k + 4, vol * .5); } // Bohlen–Pierce, from Depthfield.tone
 function swish(vol = .3) {
-  if (!soundOn || !AC) return;
+  audioWake(); if (!soundOn || !AC) return;
   try {
     const sr = AC.sampleRate, len = Math.round(sr * .45), buf = AC.createBuffer(1, len, sr), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) { const e = Math.sin(Math.PI * i / len); d[i] = (Math.random() * 2 - 1) * e * e; }
@@ -405,7 +389,7 @@ function swish(vol = .3) {
   } catch (err) {}
 }
 function motor(on, hz = 20, vol = .22) { // the gun's purr
-  if (!soundOn || !AC) { mot = null; return; }
+  on = on && soundOn; if (on) audioWake(); if (!AC) { mot = null; return; } // off always reaches the oscillator, sound tool or not
   try {
     if (on) {
       if (!mot) { const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o.type = 'square'; f.type = 'lowpass'; f.frequency.value = 260; g.gain.value = 0; o.connect(f); f.connect(g); g.connect(master); o.start(); mot = { o, g }; }
@@ -438,12 +422,12 @@ function setHead(k, eyebrow, title) {
 function show(screen) {
   S.screen = screen; const play = screen !== 'lobby';
   document.body.classList.toggle('playing', play);
-  $('#stops').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#role').hidden = play; $('#watch').hidden = play; $('#full').hidden = screen !== 'watch'; $('#senseBar').hidden = screen !== 'sense'; $('#sense').hidden = play || !canFeel(); document.body.classList.toggle('watching', screen === 'watch');
+  $('#stops').hidden = play; $('#bar').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#full').hidden = screen !== 'watch'; $('#senseBar').hidden = screen !== 'sense'; $('#sense').hidden = !canFeel(); document.body.classList.toggle('watching', screen === 'watch');
   $('#legend').hidden = !(screen === 'moles' || screen === 'flip'); document.body.classList.toggle('calling', screen === 'call');
   if (screen !== 'end') setHead(screen);
   floaters.length = 0; motor(false); layout();
 }
-function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } if (feeling) stopFeeling(); if (['#table', '#watch', '#sense'].includes(location.hash)) location.hash = ''; show('lobby'); hint('Pick a stop on the body, or begin and play all three down the back.'); }
+function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } if (feeling) stopFeeling(); if (['#table', '#watch', '#sense'].includes(location.hash)) location.hash = ''; show('lobby'); hint('Press a stop on the back, or throw the strawberry at one. Begin plays 01 to 03 down the back.'); }
 function start(kind) {
   show(kind); pickLean();
   ({ moles: startMoles, hogs: startHogs, golf: startGolf, call: startCall, flip: startFlip })[kind]();
@@ -457,19 +441,15 @@ function advance() {
   const lines = (whole ? ['moles', 'hogs', 'golf'] : [k]).map(g => S.results[g] ? `<li><b>${NAMES[g]}</b> · ${S.results[g].line}</li>` : '').join('');
   const truth = k === 'call' ? 'Ten calls. Now swap places.' : whole ? (settle >= .93 ? 'Nobody on this table is getting up soon.' : settle >= .76 ? 'Calm. The calves still have opinions.' : settle >= .5 ? 'Arriving, not arrived. Slower hands next round.' : 'Still caffeinated. Slower hands next round.') : G.result.truth;
   $('#cardEyebrow').textContent = k === 'call' ? 'Call · done' : `${whole ? 'Down the back' : NAMES[k]} · settled ${pct}%${whole && best ? ` · best ${pad(Math.max(best, settle * 100), 3)}%` : ''}`;
-  $('#cardWord').textContent = k === 'call' ? 'swap' : wordFor(settle); $('#cardWord').style.setProperty('--w', 50 + 100 * (k === 'call' ? .7 : settle));
-  $('#cardLines').innerHTML = lines; $('#cardTruth').textContent = truth;
+  $('#cardWord').textContent = k === 'call' ? 'swap' : wordFor(settle);
+  $('#cardLines').innerHTML = lines; if (truth) gsay(truth, true); // the review is the guardian's to give
   S.last = whole ? 'run' : k; S.screen = 'end'; $('#card').hidden = false; $('#again').focus({ preventScroll: true });
   hint(k === 'call' ? 'The table is yours.' : 'The receiver keeps what you gave them until you start a fresh round.');
 }
 const NAMES = { moles: 'Moles', hogs: 'Hedgehogs', golf: 'Golf', call: 'Call', flip: 'Flip' };
 function begin() { S.tension = .78; S.read = .78; S.results = {}; S.run = ['moles', 'hogs', 'golf']; S.runI = 0; start('moles'); }
 $('#begin').addEventListener('click', begin);
-document.querySelectorAll('.stop').forEach(b => {
-  b.addEventListener('click', () => { S.run = null; start(b.dataset.game); });
-  b.addEventListener('pointerenter', () => S.hover = b.dataset.game); b.addEventListener('focus', () => S.hover = b.dataset.game);
-  b.addEventListener('pointerleave', () => S.hover = ''); b.addEventListener('blur', () => S.hover = '');
-});
+document.querySelectorAll('.spot').forEach(b => b.addEventListener('click', () => { S.run = null; start(b.dataset.game); }));
 $('#leave').addEventListener('click', lobby);
 $('#back').addEventListener('click', lobby);
 $('#again').addEventListener('click', () => { if (S.last === 'run') begin(); else { S.run = null; start(S.last); } });
@@ -484,8 +464,15 @@ function resume() { S.stopped = false; $('#stopped').hidden = true; if (ROLE ===
 $('#stop').addEventListener('click', () => stop());
 $('#resume').addEventListener('click', resume);
 $('#stoppedBack').addEventListener('click', () => { resume(); lobby(); });
-function setCeil(d) { S.ceiling = clamp(S.ceiling + d, 1, 4); $('#ceil').textContent = `Ceiling ${S.ceiling} / 4`; if (d && ROLE === 'table') publish(); }
-$('#ceilDn').addEventListener('click', () => setCeil(-1)); $('#ceilUp').addEventListener('click', () => setCeil(1));
+function setCeil(d, v) { // the ceiling lives in the sheet; a table screen's ceiling travels to the players
+  S.ceiling = clamp(v || S.ceiling + d, 1, 4); const i = $('#ceilIn'); if (+i.value !== S.ceiling) { i.value = S.ceiling; i.dispatchEvent(new Event('input')); }
+  $('#ceilOut').textContent = `${S.ceiling} of 4`; if ((d || v) && ROLE === 'table') publish();
+}
+$('#ceilIn').addEventListener('input', e => { if (+e.target.value !== S.ceiling) setCeil(0, +e.target.value); });
+$('#roomIn').addEventListener('input', e => { $('#roomOut').textContent = Math.round(e.target.value * 100) + '%'; });
+const closeSheet = () => { const c = $('#sheet [data-df-close]'); if (!$('#sheet').hidden && c) c.click(); };
+$('#contrastIn').addEventListener('change', e => Depthfield.theme.set({ skin: e.target.checked ? 'contrast' : 'peach' }, true));
+addEventListener('df:theme', () => { readColors(); wxKey = ''; });
 
 /* ---------- two screens: the one on the table calls it ---------- */
 // Presence is the whole wire: the table publishes what it asked for, players publish what they answered.
@@ -511,7 +498,7 @@ function publish() {
 }
 (async () => {
   try { for (let i = 0; i < 20 && !(window.claude && window.claude.use); i++) await new Promise(ok => setTimeout(ok, 250)); // the room lights up when it can; the page never waits for it
-    if (!window.claude || !window.claude.use) return; const r = await window.claude.use('room'); if (!r) return; room = r; r.onPeers(ch => { peers = ch.peers; noteReadings(); }, () => { room = null; peers = []; }); publish(); if (S.screen === 'lobby') $('#sense').hidden = !canFeel(); } catch (err) {}
+    if (!window.claude || !window.claude.use) return; const r = await window.claude.use('room'); if (!r) return; room = r; r.onPeers(ch => { peers = ch.peers; noteReadings(); }, () => { room = null; peers = []; }); publish(); $('#sense').hidden = !canFeel(); } catch (err) {}
 })();
 function syncRoom() { // a player follows the table's stop and ceiling; a watcher follows the player's
   if (ROLE === 'watch') { const v = watchSource(), st = !!(v && v.st === true); if (st && !S.stopped) stop('remote'); else if (!st && S.stopped) resume(); return; }
@@ -522,7 +509,7 @@ function syncRoom() { // a player follows the table's stop and ceiling; a watche
     if (src.ceiling && src.ceiling !== S.ceiling) { S.ceiling = src.ceiling; setCeil(0); }
   } else if (S.stopped && S.stopBy === 'remote') { S.stopBy = 'local'; $('#resume').hidden = false; $('#stoppedBack').hidden = false; $('#stoppedNote').textContent = 'Their screen went away. Ask them before you start again.'; }
 }
-function enterTable() { ROLE = 'table'; G = null; S.run = null; show('table'); if (location.hash !== '#table') location.hash = 'table'; publish(); cv.focus({ preventScroll: true }); }
+function enterTable() { closeSheet(); if (feeling) stopFeeling(); ROLE = 'table'; G = null; S.run = null; show('table'); if (location.hash !== '#table') location.hash = 'table'; publish(); cv.focus({ preventScroll: true }); }
 $('#role').addEventListener('click', enterTable);
 document.querySelectorAll('.pad[data-set]').forEach(b => {
   const st = SETS[+b.dataset.set]; b.innerHTML = `${glyphSvg(st)}<span>${st.id}</span>`; b.style.setProperty('--pad', st.col);
@@ -567,7 +554,7 @@ function buildView() {
 const num = (x, a, b, d = 0) => { x = +x; return isFinite(x) ? clamp(x, a, b) : d; }, arr = a => Array.isArray(a) ? a : null;
 const flSeen = {}; let flStarted = false, legendOn = null;
 function watchSource() { const p = others('play').filter(q => q.presence.view && typeof q.presence.view === 'object').sort((a, b) => b.updatedAt - a.updatedAt)[0]; return p ? p.presence.view : null; }
-function enterWatch() { ROLE = 'watch'; G = null; S.run = null; show('watch'); if (location.hash !== '#watch') location.hash = 'watch'; publish(); }
+function enterWatch() { closeSheet(); if (feeling) stopFeeling(); ROLE = 'watch'; G = null; S.run = null; show('watch'); if (location.hash !== '#watch') location.hash = 'watch'; publish(); }
 $('#watch').addEventListener('click', enterWatch);
 $('#full').addEventListener('click', () => { try { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); } catch (err) {} });
 function route() { const h = location.hash; if (h === '#watch') { if (ROLE !== 'watch') enterWatch(); } else if (h === '#table') { if (ROLE !== 'table') enterTable(); } else if (h === '#sense') { if (ROLE !== 'sense') enterSense(); } else if (ROLE !== 'play') lobby(); }
@@ -635,7 +622,7 @@ async function startFeeling() {
 }
 function stopFeeling() { removeEventListener('devicemotion', onMotion); feeling = false; batch = []; try { if (wake) wake.release(); } catch (err) {} wake = null; $('#feel').textContent = 'Start feeling'; publish(); }
 $('#feel').addEventListener('click', startFeeling);
-function enterSense() { ROLE = 'sense'; G = null; S.run = null; show('sense'); if (location.hash !== '#sense') location.hash = 'sense'; publish(); }
+function enterSense() { closeSheet(); ROLE = 'sense'; G = null; S.run = null; show('sense'); if (location.hash !== '#sense') location.hash = 'sense'; publish(); }
 $('#sense').addEventListener('click', enterSense);
 function updSense(dt) {
   $('#feel').disabled = !canFeel();
@@ -721,7 +708,7 @@ function updMoles(dt) {
       if (under && under.kind === 'tease' && !under.told) { under.told = true; say(under.z.x, under.z.y, 'that one is for them', C.muted); }
       if (under && st) {
         under.fill += dt / (st.hold * (1 + .25 * capped));
-        if (under.kind === 'decoy' && under.fill > .42) { under.out = .001; G.streak = 0; G.fooled++; say(under.z.x, under.z.y, 'feint. it never rippled.', C.ink); tick(20); pluck(0, .3); answer(under); }
+        if (under.kind === 'decoy' && under.fill > .42) { under.out = .001; G.streak = 0; G.fooled++; say(under.z.x, under.z.y, 'feint. it never rippled.', C.ink); tick(20); pluck(0, .3); answer(under); gsay('Lit and flat. The suit is keeping count.'); }
         else if (under.fill >= 1) {
           under.out = .001; under.won = true; G.hit++; G.streak++; G.best = Math.max(G.best, G.streak);
           const lean = under.set === S.lean && !G.live && !S.sensed; if (!G.live) ease(-.028 * (lean ? 1.4 : 1) * (1 + Math.min(G.streak, 6) * .06)); answer(under);
@@ -790,7 +777,7 @@ function updHogs(dt) {
     h.br = Math.max(0, h.br - dt * .7);
     if (P.inside && P.speed > 1.15 && d < .17 && h.br < .25) {
       h.br = 1; h.calm = Math.max(0, h.calm - .22); h.a = Math.atan2(h.y - P.by, h.x - P.bx); h.last = null; G.bristled++; ease(.012);
-      say(h.x, h.y, 'bristled', C.danger); tick(20);
+      say(h.x, h.y, 'bristled', C.danger); tick(20); gsay('Hedgehogs can tell when you are in a hurry.');
     }
     const held = P.down && d < .09 && h.br < .3;
     if (held) {
@@ -858,7 +845,7 @@ function strike() {
   const ang = Math.atan2(dy, dx) + (rushed ? rnd(-.4, .4) : 0), pw = Math.min(len, .5) * (onBody(b.x, b.y) > 0 ? 1 : .6) * 2.75;
   b.vx = Math.cos(ang) * pw; b.vy = Math.sin(ang) * pw; b.moving = true; G.strokes++; G.total++; G.lip = false;
   G.glide.push({ x0: a.x0, y0: a.y0, x1: a.x1, y1: a.y1, t: 0 });
-  if (rushed) { G.rushed++; ease(.015); say(a.x1, a.y1, 'rushed', C.danger); tick(20); } else if (len > .12) { ease(-.022); say(a.x1, a.y1, 'long and slow', C.cue); }
+  if (rushed) { G.rushed++; ease(.015); say(a.x1, a.y1, 'rushed', C.danger); tick(20); gsay('One long glide. That was three short ones in a coat.'); } else if (len > .12) { ease(-.022); say(a.x1, a.y1, 'long and slow', C.cue); }
   swish(rushed ? .4 : .25);
 }
 function updGolf(dt) {
@@ -933,7 +920,8 @@ function drawCall() {
 }
 
 /* ---------- lobby: the path of the adventure, drawn on the back ---------- */
-const STOPS = [{ g: 'moles', n: '01', x: -.5, y: -.095 }, { g: 'hogs', n: '02', x: -.02, y: .08 }, { g: 'golf', n: '03', x: .62, y: .077 }];
+// where each game sits: the first three are the path Begin plays; Call is at the hand, Flip at the head
+const STOPS = [{ g: 'moles', x: -.5, y: -.095, wide: 'up', tall: 'right' }, { g: 'hogs', x: -.02, y: .08, wide: 'down', tall: 'left' }, { g: 'golf', x: .62, y: .077, wide: 'down', tall: 'left' }, { g: 'call', x: .075, y: -.257, wide: 'up', tall: 'right' }, { g: 'flip', x: -.835, y: 0, wide: 'up', tall: 'right' }];
 function pathAt(u) { // 0..1 along the three stops
   const k = clamp(u, 0, .9999) * 2, i = Math.floor(k), t = k - i, a = STOPS[i], b = STOPS[i + 1], e = t * t * (3 - 2 * t);
   return [lerp(a.x, b.x, t), lerp(a.y, b.y, e)];
@@ -943,22 +931,17 @@ function drawLobby() {
   for (let u = 0; u <= 1.0001; u += .02) { const [bx, by] = pathAt(u), [x, y] = toS(bx, by); u ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
   ctx.stroke(); ctx.setLineDash([]);
   if (!still) { const [hbx, hby] = pathAt((S.t / 7) % 1), [hx, hy] = toS(hbx, hby); drawHum(hx, hy, Math.max(12, .05 * s), .8); }
-  for (const q of STOPS) {
-    const [x, y] = toS(q.x, q.y), on = S.hover === q.g || (P.inside && hyp(P.bx - q.x, P.by - q.y) < .1), r = on ? 19 : 16;
-    ctx.fillStyle = C.raised; ctx.strokeStyle = on ? C.cue : C.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = C.ink; ctx.font = `500 12px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(q.n, x, y + .5);
-  }
 }
 
 /* ---------- weather: the receiver's state, as the sky over their own back ---------- */
 // Depthfield's four: red rain, peach fall, mint clearing, night garden. The accent follows the weather and a chip names it.
-const WX = [{ id: 'red rain', acc: '#ff6b6b', rgb: [255, 150, 140] }, { id: 'peach fall', acc: '#ffb48a', rgb: [255, 206, 170] }, { id: 'mint clearing', acc: '#5ef2b8', rgb: [190, 255, 228] }, { id: 'night garden', acc: '#c9e6ff', rgb: [201, 226, 255] }];
+const WX = [{ id: 'red rain', acc: hex6(css('--rain'), '#ff6b6b'), rgb: [255, 150, 140] }, { id: 'peach fall', acc: hex6(css('--peach'), '#ffb48a'), rgb: [255, 206, 170] }, { id: 'mint clearing', acc: hex6(css('--mint'), '#5ef2b8'), rgb: [190, 255, 228] }, { id: 'night garden', acc: hex6(css('--frost'), '#c9e6ff'), rgb: [201, 226, 255] }];
 const wxMix = [0, 1, 0, 0], lampRGB = [255, 206, 170]; let wxKey = '';
 const noReading = () => !S.sensed && (S.screen === 'call' || S.screen === 'table' || S.screen === 'sense' || !!(G && (G.kind === 'call' || G.live)));
 const lampA = a => `rgba(${lampRGB[0] | 0},${lampRGB[1] | 0},${lampRGB[2] | 0},${a})`;
 function updWeather(dt) {
   const settle = 1 - S.read, blind = noReading(), want = blind ? 1 : settle < .335 ? 0 : settle < .76 ? 1 : settle < .93 ? 2 : 3, key = want + (blind ? 'n' : '');
-  if (key !== wxKey) { wxKey = key; C.accent = WX[want].acc; document.documentElement.style.setProperty('--accent', WX[want].acc); setText('#wx', blind ? 'no reading' : WX[want].id); }
+  if (key !== wxKey) { wxKey = key; C.accent = WX[want].acc; if (document.documentElement.dataset.theme !== 'contrast') { document.documentElement.style.setProperty('--accent', WX[want].acc); document.documentElement.style.setProperty('--art-accent', WX[want].acc); } else { document.documentElement.style.removeProperty('--accent'); document.documentElement.style.removeProperty('--art-accent'); } setText('#wx', blind ? 'no reading' : WX[want].id); }
   const k = Math.min(1, dt * 1.3); lampRGB[0] = lampRGB[1] = lampRGB[2] = 0;
   for (let i = 0; i < 4; i++) { wxMix[i] += ((i === want ? 1 : 0) - wxMix[i]) * k; for (let c = 0; c < 3; c++) lampRGB[c] += wxMix[i] * WX[i].rgb[c]; }
 }
@@ -989,7 +972,7 @@ function drawWeather() {
 const trace = $('#trace'), tctx = trace.getContext('2d'), breathLog = new Float32Array(160); let logI = 0, logT = 0;
 function drawTrace() { // live data: the last eight seconds of breath
   const w = trace.width, h = trace.height, y = v => h / 2 - v * (h / 2 - 8);
-  tctx.clearRect(0, 0, w, h); tctx.strokeStyle = C.muted; tctx.lineWidth = 3; tctx.lineJoin = 'round'; tctx.beginPath();
+  tctx.clearRect(0, 0, w, h); tctx.strokeStyle = CH.muted; tctx.lineWidth = 3; tctx.lineJoin = 'round'; tctx.beginPath();
   for (let i = 0; i < 160; i++) { const x = i / 159 * (w - 12); i ? tctx.lineTo(x, y(breathLog[(logI + i) % 160])) : tctx.moveTo(x, y(breathLog[logI % 160])); }
   tctx.stroke(); tctx.fillStyle = C.accent; tctx.beginPath(); tctx.arc(w - 12, y(breathLog[(logI + 159) % 160]), 7, 0, TAU); tctx.fill();
 }
@@ -1000,9 +983,10 @@ function update(dt) {
   P.speed *= Math.exp(-5 * dt);
   const kx = (K.ArrowRight ? 1 : 0) - (K.ArrowLeft ? 1 : 0), ky = (K.ArrowDown ? 1 : 0) - (K.ArrowUp ? 1 : 0);
   if (kx || ky) moveTo(clamp(P.x + kx * 230 * dt, 0, W), clamp(P.y + ky * 230 * dt, 0, Hh), performance.now());
-  const tx = P.inside ? P.x : cx, ty = P.inside ? P.y : cy; L.x += (tx - L.x) * Math.min(1, dt * 5); L.y += (ty - L.y) * Math.min(1, dt * 5);
+  if (lamp) { if (ROLE === 'watch' && P.inside) lamp.at(P.x / W, P.y / Hh); L.x = lamp.u * W; L.y = lamp.v * Hh; ROOM = lamp.room; }
   bumps.length = 0; syncRoom();
   if (ROLE === 'play' && room) { pubT -= dt; if (pubT <= 0) { pubT = .085; if (others('watch').length) publish(); } }
+  noteT -= dt; if (noteT <= 0) { noteT = 1; const n = peers.filter(q => !q.sameTab).length; setText('#screensNote', !room ? 'This page is alone here. Screens link through the Tabble server or the claude.ai artifact.' : n ? `${n} other screen${n > 1 ? 's' : ''} here.` : 'No other screen has this page open.'); }
   S.sensed = reading(false); if (S.sensed) { S.conf = S.sensed.sure; if (S.sensed.sure >= .35) S.tension = 1 - S.sensed.settle; } // a real reading outranks the rehearsal
   const playing = G && !G.over && !S.stopped && G.kind !== 'call' && !G.live && S.screen !== 'watch' && !S.sensed;
   if (playing) { ease(.0035 * dt); S.leanT -= dt; if (S.leanT <= 0) pickLean(); }
@@ -1034,7 +1018,7 @@ function field() {
 }
 function bodyXf() { tall ? ctx.setTransform(0, s * dpr, -s * dpr, 0, cx * dpr, cy * dpr) : ctx.setTransform(s * dpr, 0, 0, s * dpr, cx * dpr, cy * dpr); }
 function drawRelief() { // a reflective surface: lit by the lamp, dark away from it
-  const [lx, ly] = toB(L.x, L.y), lz = .42, zs = .2, lr = lampRGB[0], lg = lampRGB[1], lb = lampRGB[2];
+  const [lx, ly] = toB(L.x, L.y), lz = .42, zs = .2, lr = lampRGB[0], lg = lampRGB[1], lb = lampRGB[2], room = clamp(ROOM / .85, .2, 1.18);
   for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
     const k = j * NX + i, h = Hf[k], o = k * 4 + 3;
     if (h < .004) { relief[o] = 0; continue; }
@@ -1042,7 +1026,7 @@ function drawRelief() { // a reflective surface: lit by the lamp, dark away from
     const dx = lx - (X0 + i * DX), dy = ly - (Y0 + j * DY), dz = lz - h * zs, dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
     let d = (dz - gx * dx - gy * dy) / (dl * Math.sqrt(gx * gx + gy * gy + 1)); if (d < 0) d = 0;
     const a = (h < .06 ? h / .06 : 1) * (.075 + .5 * d / (1 + dl * dl * 1.8) + .1 * h);
-    relief[o - 3] = lr; relief[o - 2] = lg; relief[o - 1] = lb; relief[o] = a > .7 ? 178 : a * 255;
+    relief[o - 3] = lr; relief[o - 2] = lg; relief[o - 1] = lb; relief[o] = (a > .7 ? 178 : a * 255) * room;
   }
   reliefCtx.putImageData(reliefImg, 0, 0);
   bodyXf(); ctx.imageSmoothingEnabled = true; ctx.drawImage(reliefCv, X0 - DX / 2, Y0 - DY / 2, NX * DX, (GY + 1) * DY); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1053,8 +1037,10 @@ function drawTable() {
   ctx.beginPath(); ctx.arc(-.835, 0, .15, 0, TAU); ctx.fill(); ctx.stroke(); // face cradle
   ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(-.7, -.42, 1.72, .84, .05); else ctx.rect(-.7, -.42, 1.72, .84); ctx.fill(); ctx.stroke();
   ctx.fillStyle = C.void; ctx.beginPath(); ctx.ellipse(-.835, 0, .05, .062, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = hexA(C.ink, .045); ctx.lineWidth = px; ctx.beginPath(); // a 10 cm grid: the table is 172 by 84
+  for (let x = -.6; x < 1.01; x += .1) { ctx.moveTo(x, -.42); ctx.lineTo(x, .42); } for (let y = -.4; y < .41; y += .1) { ctx.moveTo(-.7, y); ctx.lineTo(1.02, y); } ctx.stroke();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, Math.max(180, s * .55)); g.addColorStop(0, lampA(.1)); g.addColorStop(1, lampA(0));
+  const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, Math.max(180, s * .55)); g.addColorStop(0, lampA(.1 * ROOM / .85)); g.addColorStop(1, lampA(0));
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh);
 }
 function drawNoGo() { // where the gun will not run: one quiet dashed line, no hatching
@@ -1088,7 +1074,7 @@ function drawContours() {
         }
       }
     }
-    ctx.globalAlpha = li === 0 ? .8 : .2 + .22 * (li / LEVELS.length); ctx.lineWidth = (li === 0 ? 1.5 : 1) * px; ctx.stroke();
+    ctx.globalAlpha = (li === 0 ? .8 : .2 + .22 * (li / LEVELS.length)) * clamp(.3 + .82 * ROOM, .3, 1); ctx.lineWidth = (li === 0 ? 1.5 : 1) * px; ctx.stroke();
   }
   ctx.globalAlpha = 1; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
@@ -1139,18 +1125,24 @@ const hud = {};
 function setText(id, t) { if (hud[id] !== t) { hud[id] = t; $(id).textContent = t; } }
 function drawHud() {
   const call = S.screen === 'call' || (S.screen === 'watch' && !!G && G.kind === 'call') || (S.screen === 'end' && S.last === 'call'), table = S.screen === 'table', sense = S.screen === 'sense';
-  const live = !!(G && G.kind === 'flip' && G.live), real = S.sensed, nocam = !real && (call || table || live || sense), settle = 1 - S.read, small = W <= 760, pct = pad(S.conf * 100, 3);
+  const live = !!(G && G.kind === 'flip' && G.live), real = S.sensed, nocam = !real && (call || table || live || sense), settle = 1 - S.read, small = W <= 760;
   if (hud.nocam !== nocam) { hud.nocam = nocam; document.body.classList.toggle('nocam', nocam); }
-  setText('#who', real ? (small ? `Breath · ${pct}%` : `Receiver · read from breath · ${pct}% sure`)
+  // Depthfield's rule: a scripted state is labelled rehearsed, a guess is labelled inferred, a reading says what it read.
+  setText('#who', real ? (small ? `Breath · ${pad(S.conf * 100, 2)}% sure` : `Receiver · read from breath · ${pad(S.conf * 100, 2)}% sure`)
     : sense ? 'This phone · on their back' : table ? 'You are on the table' : live ? (small ? 'On a second screen' : 'Receiver · calling it from the table')
-    : call ? (small ? 'No camera here' : 'Receiver · no camera reaches this page') : small ? `Inferred · ${pct}%` : `Receiver · inferred · ${pct}% sure`);
-  const word = real ? (real.sure >= .35 || S.conf >= .35 ? wordFor(settle) : 'listening') : sense ? (feeling ? 'listening' : 'not yet') : table ? 'your call' : live ? 'their call' : call ? 'watch the breath' : wordFor(settle);
+    : call ? (small ? 'No reading here' : 'Receiver · nothing here reads them') : small ? 'Rehearsed' : 'Receiver · rehearsed, not read');
+  const word = real ? (real.sure >= .35 ? wordFor(settle) : 'listening') : sense ? (feeling ? 'listening' : 'not yet') : table ? 'your call' : live ? 'their call' : call ? 'watch the breath' : wordFor(settle);
   if (hud.word !== word) { hud.word = word; $('#word').textContent = word; }
-  const w = Math.round(50 + 100 * (nocam ? .5 : settle)); if (hud.w !== w) { hud.w = w; $('#word').style.setProperty('--w', w); }
+  const w = Math.round((nocam ? .5 : settle) * 50) / 50; if (hud.w !== w && stretch) { hud.w = w; stretch.to(w); } // the word is as wide as they are settled
+  const lean = real || nocam || !G || !(G.kind === 'moles' || G.kind === 'flip') ? '' : SETS[S.lean].id;
+  if (hud.lean !== lean) { hud.lean = lean; for (const li of $('#legend').children) { if (li.dataset.set === lean) li.setAttribute('aria-current', 'true'); else li.removeAttribute('aria-current'); } }
   if (nocam) return;
-  drawTrace(); setText('#breath', `${pad(real && real.bpm ? real.bpm : lerp(19, 7, settle), 2)} / min`);
-  const lean = real ? '' : SETS[S.lean].id; if (hud.lean !== lean) { hud.lean = lean; $('#leans').innerHTML = real ? 'not read' : `${glyphSvg(SETS[S.lean])}<span style="color:${SETS[S.lean].col}">${lean}</span>`; }
-  const p = pad(settle * 100, 3) + '%'; if (hud.pct !== p) { hud.pct = p; $('#pct').textContent = p; $('#meter').firstElementChild.style.width = (settle * 100).toFixed(1) + '%'; $('#meter').setAttribute('aria-valuenow', Math.round(settle * 100)); }
+  drawTrace(); setText('#breath', pad(real && real.bpm ? real.bpm : lerp(19, 7, settle), 2));
+  const p = pad(settle * 100, 3) + '%'; if (hud.pct !== p) { hud.pct = p; $('#pct').textContent = p; $('#meter .df-progress__fill').style.width = (settle * 100).toFixed(1) + '%'; $('#meter').setAttribute('aria-valuenow', Math.round(settle * 100)); }
+}
+let noteT = 0;
+function gsay(text, now) { // the guardian reviews: at once for a result, otherwise at most once a minute
+  if (!guardian || (!now && S.t - lastSaid < 60)) return; lastSaid = S.t; guardian.say(text, now ? 9000 : 0);
 }
 let lastT = 0;
 function frame(now) {
@@ -1160,8 +1152,25 @@ function frame(now) {
 
 /* ---------- boot, and keep the receiver across a republish ---------- */
 function boot(data) {
-  if (data && typeof data.tension === 'number') { S.tension = S.read = clamp(data.tension, 0, 1); if (data.ceiling) { S.ceiling = clamp(data.ceiling, 1, 4); setCeil(0); } }
-  layout(); L.x = cx; L.y = cy; pickLean(); route();
+  const D = window.Depthfield;
+  D.init({ cursor: false, theme: { skin: 'peach', face: 'night' } });
+  soundOn = D.tone.on; $('#contrastIn').checked = D.theme.get().skin === 'contrast'; readColors();
+  lamp = D.lamp(document.documentElement, { input: $('#roomIn'), room: .85 }); // one warm light on an arm; the room slider dims what only reflects
+  stretch = D.stretch($('#word'), { value: 1 - S.read, intro: true });
+  D.sense({ el: $('#hands'), prefix: 'your hands' }); // the kit infers the player from the pointer: here, the giver's hands
+  guardian = D.guardian({ home: innerWidth <= 760 ? [.84, .82] : [.88, .58], hello: 'Guardian on duty. I review hands, not intentions.', miss: 'Missed the back. Standards remain high.',
+    lines: ['Slow is a setting too.', 'The spine is not a target. The gun knows.', 'Lit and rippling is real. Lit and flat is the suit being funny.', 'Nobody settles because you scored.', 'Throw me at a stop. I land on things.'],
+    follow: ptr => { // free in the lobby; off the back, at the foot of the table, while hands are working
+      if (S.screen === 'lobby' || S.screen === 'end') return ptr.on ? { x: ptr.x + 46, y: ptr.y - 30 } : null;
+      const [x, y] = toS(.96, tall ? .36 : -.38); return { x, y };
+    },
+    onLand: (x, y) => { // thrown at a stop, it starts that game; every stop is also a button
+      if (S.screen !== 'lobby' || S.stopped) return null;
+      const [bx, by] = toB(x, y), hit = STOPS.find(q => hyp(bx - q.x, by - q.y) < .16); if (!hit) return null;
+      S.run = null; start(hit.g); return `${NAMES[hit.g]}. Go on, then.`;
+    } });
+  if (data && typeof data.tension === 'number') { S.tension = S.read = clamp(data.tension, 0, 1); if (data.ceiling) S.ceiling = clamp(data.ceiling, 1, 4); }
+  setCeil(0); layout(); L.x = cx; L.y = cy; pickLean(); route();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
   requestAnimationFrame(t => { lastT = t; frame(t); });
 }
