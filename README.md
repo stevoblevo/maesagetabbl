@@ -14,6 +14,8 @@ Open `http://<this machine>:8787` on two screens on the same network. On the pho
 
 A third screen can watch: open `http://<this machine>:8787/#watch` on a TV. It follows whoever is playing and shows the receiver's state large. `#table` opens straight onto the table's screen.
 
+A fourth screen can read the receiver: on a spare phone open `https://<this machine>:8788/#sense`, accept the certificate warning once, press **Start feeling**, and lay the phone on their lower back, screen up. Ten seconds later every screen shows their real breath rate, and the state, the weather and the settle figure follow it. It has to be the https address: browsers do not give a page its motion sensor over plain http.
+
 One screen works too: stops 01 to 04 need nothing else.
 
 | Stop | Game | Teaches | How |
@@ -30,7 +32,7 @@ One screen works too: stops 01 to 04 need nothing else.
 - Lit and rippling is real. Lit and flat is a feint on the player. Rippling with no light is the suit teasing the receiver.
 - The gun cuts out over the spine, neck, head and the backs of the knees.
 - The receiver's ceiling caps the gun. Stop is latched, and a stop from the table's screen is lifted only there.
-- State is inferred and labelled inferred. Where there is no camera, the page says so.
+- State is inferred and labelled inferred. With a phone on their back it is read from breath and says so, with how sure it is. With nothing reading them it is a rehearsal, and where even that makes no sense the page says there is no reading.
 - The state is also the weather over the back: red rain when braced, peach fall, mint clearing, night garden when they are a puddle. The accent follows it and a chip names it.
 
 ## Layout
@@ -38,7 +40,8 @@ One screen works too: stops 01 to 04 need nothing else.
 | Path | What |
 |---|---|
 | `web/index.html` | The whole game: one file, no libraries. Also published as a private claude.ai artifact, where it uses the platform's room instead of this server. |
-| `cmd/tabble` | Go. Serves the page and relays presence between screens over one event stream. Standard library only. |
+| `cmd/tabble` | Go. Serves the page over http and https, relays presence between screens over one event stream, and takes a phone's accelerometer. Standard library only. |
+| `internal/breath` | Go. Turns that accelerometer stream into a breath rate, how sure it is, and a settle figure. |
 | `docs/` | Design notes: the games, the suit's oil, cooling and power. |
 
 ## Languages
@@ -51,7 +54,9 @@ Server and tooling code is Go, Rust or Erlang. The page is JavaScript because th
 go vet ./... && go test ./...
 ```
 
-The tests cover the room: presence travels between screens, a leaving screen is forgotten, and bad presence is refused. The games themselves were play-tested in a headless browser, not yet by people on a table.
+The tests cover the room (presence travels between screens, a leaving screen is forgotten, bad presence is refused), the certificate, and the breath estimator against a synthetic phone: rates from 6 to 24 a minute, an empty table, a massage gun running, a breath that slows.
+
+Not yet checked on a person. The games were play-tested in a headless browser, and the breath reading has only ever seen signals a test made up. A real back, a real phone and real hands are issue #1 and issue #4.
 
 ## Where plans live
 
