@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maesage Tabble Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,400..700&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Depthfield, peach-night skin. One world, one theme, by choice: the table is a night scene.
+   Layout: one top-down table fills the window. Chrome floats at the corners.
+   The receiver's screen is the lit slot along the bottom edge. */
+:root {
+  color-scheme: dark;
+  --void: #111722; --surface: #161c29; --raised: #1b2230; --line: #2c3444;
+  --ink: #f3ece6; --ink-muted: #a9a3a8;
+  --accent: #ffb48a; --accent-soft: #373033; --on-accent: #111722;
+  --cue: #c9e6ff; --danger: #ff8a7a; --focus: #c9e6ff;
+  --chrome: rgba(27, 34, 48, .86); --scrim: rgba(17, 23, 34, .78);
+  /* the four gun settings are categories, so they take the tag hues */
+  --set-hush: #8ff0d2; --set-wave: #c4a2ff; --set-wake: #f3cf8a; --set-knead: #f29fb0;
+  --lamp: #ffc8a0;
+  --display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --stretch: "Anybody", "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --dur-fast: 160ms; --dur-base: 420ms; --dur-slow: 900ms;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --gutter: clamp(16px, 2.4vw, 28px);
+  --slotH: 86px;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--void); color: var(--ink); font: 400 17px/1.55 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+#table { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+
+.eyebrow { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 500 12px/16px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-muted); margin: 0; font-variant-numeric: tabular-nums; }
+#head { position: fixed; left: var(--gutter); top: clamp(14px, 2vw, 24px); max-width: min(34rem, calc(100vw - 2 * var(--gutter))); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+#title { margin: 0; font: 300 clamp(30px, 4.4vw, 58px)/1 var(--display); font-variation-settings: "opsz" 72; letter-spacing: -.02em; text-wrap: balance; max-width: 13em; text-shadow: 0 2px 24px rgba(17, 23, 34, .9); }
+#title em { font-style: italic; color: var(--accent); }
+body.playing #title { font-size: clamp(24px, 3vw, 40px); }
+body.calling #title { font-size: clamp(36px, 6vw, 76px); }
+#hint { margin: 0; font: 400 13px/18px var(--mono); color: var(--cue); max-width: 46ch; text-shadow: 0 1px 12px rgba(17, 23, 34, .95); font-variant-numeric: tabular-nums; }
+#legend { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font: 500 12px/16px var(--mono); letter-spacing: .04em; color: var(--ink-muted); }
+#legend li { display: flex; align-items: center; gap: 6px; }
+#legend svg { width: 14px; height: 14px; flex: none; }
+#legend b { font-weight: 500; }
+
+#tools { position: fixed; right: var(--gutter); top: clamp(14px, 2vw, 24px); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: 52vw; }
+.tool { min-height: 44px; padding: 0 14px; display: inline-flex; align-items: center; gap: 10px; background: var(--chrome); border: 1px solid var(--line); border-radius: 999px; font: 500 12px/16px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); backdrop-filter: blur(10px); transition: border-color var(--dur-fast); }
+button.tool:hover { border-color: var(--ink-muted); }
+.tool.ceil { padding: 0 4px; gap: 2px; }
+.tool.ceil button { width: 36px; height: 36px; border-radius: 999px; font: 500 16px/1 var(--mono); color: var(--ink); }
+.tool.ceil button:hover { background: var(--surface); }
+.tool.ceil span { padding: 0 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+#stops { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; align-items: stretch; }
+#pads { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.pad { min-height: 60px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--chrome); border: 1.5px solid var(--line); border-radius: 10px; font: 500 12px/16px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); backdrop-filter: blur(10px); }
+.pad svg { width: 20px; height: 20px; }
+.pad[aria-pressed="true"] { border-color: currentColor; background: var(--raised); color: var(--pad, var(--ink)); }
+.stop { text-align: left; padding: 12px 14px; min-height: 44px; background: var(--chrome); border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; row-gap: 2px; align-items: baseline; backdrop-filter: blur(10px); transition: border-color var(--dur-fast), background var(--dur-fast); }
+.stop:hover, .stop:focus-visible { border-color: var(--ink-muted); background: var(--raised); }
+.stop .num { font: 500 12px/16px var(--mono); letter-spacing: .08em; color: var(--ink-muted); }
+.stop .name { font: 400 21px/26px var(--display); font-variation-settings: "opsz" 36; }
+.stop .what { grid-column: 1 / -1; font: 400 14px/20px var(--sans); color: var(--ink-muted); }
+.primary { min-height: 44px; padding: 0 30px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: 600 15px/20px var(--sans); align-self: center; transition: box-shadow var(--dur-fast); }
+.primary:hover { box-shadow: 0 0 48px rgba(255, 180, 138, .35); }
+.quiet { min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--ink-muted); font: 500 14px/20px var(--sans); }
+.quiet:hover { background: var(--surface); }
+
+#slot { position: fixed; left: 0; right: 0; bottom: 0; height: var(--slotH); padding: 0 var(--gutter); background: var(--raised); border-top: 1px solid var(--line); display: flex; align-items: center; gap: clamp(14px, 3vw, 40px); box-shadow: 0 -18px 48px rgba(0, 0, 0, .35); }
+#slot .who { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+#word { font: 600 34px/38px var(--stretch); font-variation-settings: "wdth" var(--w, 60); text-transform: lowercase; white-space: nowrap; transition: font-variation-settings var(--dur-slow) var(--ease-out); }
+.cell { display: flex; flex-direction: column; gap: 6px; flex: none; }
+.cell .v { font: 400 13px/18px var(--mono); letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.cell .v svg { width: 14px; height: 14px; }
+.meter { width: clamp(90px, 14vw, 180px); height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; }
+body.nocam #slot .cell { display: none; }
+.meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width var(--dur-base) var(--ease-out); }
+#stop { flex: none; min-width: 96px; min-height: 56px; padding: 0 22px; border-radius: 10px; border: 1.5px solid var(--ink); background: var(--void); font: 600 15px/20px var(--sans); letter-spacing: .02em; }
+#stop:hover { background: var(--ink); color: var(--void); }
+
+.card { position: fixed; right: var(--gutter); top: 50%; transform: translateY(-58%); width: min(26rem, calc(100vw - 2 * var(--gutter))); padding: 26px 26px 22px; background: var(--raised); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 64px rgba(0, 0, 0, .5); display: flex; flex-direction: column; gap: 14px; }
+.card[hidden], .veil[hidden], [hidden] { display: none !important; }
+#cardWord { margin: 0; font: 600 clamp(44px, 9vw, 68px)/1 var(--stretch); font-variation-settings: "wdth" var(--w, 60); text-transform: lowercase; }
+#cardLines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font: 400 13px/20px var(--mono); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+#cardLines b { color: var(--ink); font-weight: 500; }
+#cardTruth { margin: 0; font: 400 15px/23px var(--sans); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+
+.veil { position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(6px); display: flex; align-items: center; padding: var(--gutter); }
+.veil > div { max-width: 30rem; display: flex; flex-direction: column; gap: 14px; }
+.veil h2 { margin: 0; font: 300 clamp(48px, 9vw, 96px)/.95 var(--display); font-variation-settings: "opsz" 144; letter-spacing: -.025em; }
+.veil p { margin: 0; font: 400 clamp(18px, 2vw, 21px)/1.5 var(--sans); }
+
+@media (max-width: 760px) {
+  :root { --slotH: 78px; }
+  #stops { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .stop { padding: 9px 12px; }
+  .stop .what { display: none; }
+  .stop .name { font-size: 19px; line-height: 24px; }
+  #begin { justify-self: stretch; align-self: stretch; }
+  #tools { max-width: none; left: var(--gutter); gap: 6px; }
+  .tool { padding: 0 11px; letter-spacing: .05em; }
+  .tool.ceil button { width: 32px; }
+  .opt { display: none; }
+  #word { font-size: 26px; line-height: 30px; }
+  #stop { min-width: 78px; padding: 0 14px; }
+  #hint { max-width: 40ch; }
+  .card { top: auto; bottom: calc(var(--slotH) + 14px); transform: none; }
+}
+@media (max-height: 520px) { .stop .what { display: none; } #title { font-size: clamp(24px, 3.4vw, 36px); } }
+@media (prefers-reduced-motion: reduce) { * { transition-duration: 1ms !important; } }
+</style>
+</head>
+<body>
+<canvas id="table" tabindex="0" aria-label="The table, seen from above. Arrow keys move the hand. Hold Space to press."></canvas>
+
+<header id="head">
+  <p class="eyebrow" id="eyebrow">Maesage · the Tabble</p>
+  <h1 id="title">One lays on the table and the other… <em>plays</em>.</h1>
+  <p id="hint" aria-live="polite">Pick a stop on the body, or begin and play all three down the back.</p>
+  <ul id="legend" hidden aria-label="Gun settings"></ul>
+</header>
+
+<div id="tools">
+  <button class="tool" id="sound" aria-pressed="false">Sound off</button>
+  <div class="tool ceil" role="group" aria-label="The receiver's ceiling">
+    <button id="ceilDn" aria-label="Lower the ceiling">&minus;</button>
+    <span id="ceil">Ceiling 3 / 4</span>
+    <button id="ceilUp" aria-label="Raise the ceiling">+</button>
+  </div>
+  <button class="tool" id="role">On the table</button>
+  <button class="tool" id="leave" hidden>Leave</button>
+</div>
+
+<nav id="stops" aria-label="Games">
+  <button class="stop" data-game="moles"><span class="num">01</span><span class="name">Moles</span><span class="what">The gun tunes itself over a lit spot. Hold to percuss.</span></button>
+  <button class="stop" data-game="hogs"><span class="num">02</span><span class="name">Hedgehogs</span><span class="what">Knots with legs. Slow circles curl them up.</span></button>
+  <button class="stop" data-game="golf"><span class="num">03</span><span class="name">Golf</span><span class="what">One long glide a stroke. The cup is the knot.</span></button>
+  <button class="stop" data-game="call"><span class="num">04</span><span class="name">Call</span><span class="what">Real table, real hands. The screen calls the spots.</span></button>
+  <button class="stop" data-game="flip"><span class="num">05</span><span class="name">Flip</span><span class="what">They place the spots from the table. You answer.</span></button>
+  <button class="primary" id="begin">Begin</button>
+</nav>
+
+<nav id="pads" hidden aria-label="What you want, and where">
+  <button class="pad" data-set="0" aria-pressed="true"></button>
+  <button class="pad" data-set="1" aria-pressed="false"></button>
+  <button class="pad" data-set="2" aria-pressed="false"></button>
+  <button class="pad" data-set="3" aria-pressed="false"></button>
+  <button class="pad" id="trick" aria-pressed="false">Trick off</button>
+</nav>
+
+<footer id="slot" aria-label="The receiver's screen">
+  <div class="who">
+    <p class="eyebrow" id="who">Receiver · inferred</p>
+    <div id="word">caffeinated</div>
+  </div>
+  <div class="cell opt"><p class="eyebrow">Breath</p><div class="v" id="breath">19 / min</div></div>
+  <div class="cell opt"><p class="eyebrow">Leans</p><div class="v" id="leans">hush</div></div>
+  <div class="cell"><p class="eyebrow">Settled <span id="pct">022%</span></p><div class="meter" role="progressbar" aria-label="Settled" aria-valuemin="0" aria-valuemax="100" id="meter"><i></i></div></div>
+  <button id="stop" aria-label="Stop. Lights out and gun off.">Stop</button>
+</footer>
+
+<section class="card" id="card" hidden role="dialog" aria-labelledby="cardEyebrow">
+  <p class="eyebrow" id="cardEyebrow"></p>
+  <p id="cardWord"></p>
+  <ul id="cardLines"></ul>
+  <p id="cardTruth"></p>
+  <div class="row"><button class="primary" id="again">Play again</button><button class="quiet" id="back">Back to the table</button></div>
+</section>
+
+<div class="veil" id="stopped" hidden role="alertdialog" aria-labelledby="stoppedT">
+  <div>
+    <p class="eyebrow">The receiver said stop</p>
+    <h2 id="stoppedT">Stopped.</h2>
+    <p id="stoppedNote">Lights out, gun off. Only the person on the table starts it again.</p>
+    <div class="row"><button class="primary" id="resume">Receiver: resume</button><button class="quiet" id="stoppedBack">Back to the table</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const TAU = Math.PI * 2, hyp = Math.hypot;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b - a) * t;
+const rnd = (a = 1, b) => b === undefined ? Math.random() * a : a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const pad = (n, w) => String(Math.round(n)).padStart(w, '0');
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const C = { void: css('--void'), surface: css('--surface'), raised: css('--raised'), line: css('--line'), ink: css('--ink'), muted: css('--ink-muted'), accent: css('--accent'), cue: css('--cue'), danger: css('--danger'), lamp: css('--lamp') };
+const MONO = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+
+/* ---------- the four settings: colour is the setting, the glyph says it twice ---------- */
+const SETS = [
+  { id: 'hush', hz: '12 Hz', f: 12, level: 1, hold: .95, col: css('--set-hush'), hands: 'Feather. Fingertips, barely there.' },
+  { id: 'wave', hz: '18–32 Hz', f: 24, level: 2, hold: .8, col: css('--set-wave'), hands: 'Glide. Long strokes, flat palm.' },
+  { id: 'wake', hz: '40 Hz', f: 40, level: 3, hold: .5, col: css('--set-wake'), hands: 'Tap. Loose fists, light and quick.' },
+  { id: 'knead', hz: '28 Hz', f: 28, level: 4, hold: 1.1, col: css('--set-knead'), hands: 'Knead. Slow circles, thumbs.' },
+];
+const GLYPH = {
+  hush: '<circle cx="8" cy="8" r="2.4" fill="currentColor"/>',
+  wave: '<path d="M1.5 8c2.2-5.5 4.3-5.5 6.5 0s4.3 5.5 6.5 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  wake: '<circle cx="8" cy="3.6" r="1.7" fill="currentColor"/><circle cx="3.6" cy="11.6" r="1.7" fill="currentColor"/><circle cx="12.4" cy="11.6" r="1.7" fill="currentColor"/>',
+  knead: '<circle cx="8" cy="8" r="5.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/>',
+};
+const glyphSvg = s => `<svg viewBox="0 0 16 16" aria-hidden="true" style="color:${s.col}">${GLYPH[s.id]}</svg>`;
+$('#legend').innerHTML = SETS.map(s => `<li>${glyphSvg(s)}<b style="color:${s.col}">${s.id}</b> ${s.hz}</li>`).join('');
+
+/* ---------- the receiver as a place: a height field, drawn as contour lines ---------- */
+// body space: x runs head (-) to feet (+), y is across. Prone, so their left is +y.
+// Every part is a tube along x: a centre line, a half-width and a height, each a smooth curve through a few measured points.
+function curve(pts) {
+  const n = pts.length;
+  return x => {
+    if (x <= pts[0][0] || x >= pts[n - 1][0]) return 0;
+    let i = 0; while (x > pts[i + 1][0]) i++;
+    const p0 = pts[Math.max(0, i - 1)][1], p1 = pts[i][1], p2 = pts[i + 1][1], p3 = pts[Math.min(n - 1, i + 2)][1], t = (x - pts[i][0]) / (pts[i + 1][0] - pts[i][0]);
+    const v = .5 * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (3 * p1 - p0 - 3 * p2 + p3) * t * t * t);
+    return v > 0 ? v : 0;
+  };
+}
+const flat = v => () => v;
+const TORSO = { c: flat(0), w: curve([[-.8, 0], [-.775, .04], [-.72, .046], [-.67, .056], [-.635, .112], [-.6, .182], [-.55, .2], [-.45, .186], [-.3, .162], [-.17, .146], [-.06, .156], [.04, .18], [.11, .174], [.165, .13], [.2, 0]]),
+  h: curve([[-.8, .3], [-.72, .4], [-.67, .46], [-.6, .66], [-.5, .78], [-.35, .74], [-.18, .6], [-.05, .66], [.06, .9], [.13, .8], [.2, .4]]) };
+const LEG = { c: curve([[-.1, .09], [.0, .089], [.3, .085], [.5, .078], [.84, .072], [1, .075]]), w: curve([[.02, 0], [.06, .086], [.2, .092], [.38, .074], [.5, .056], [.6, .065], [.72, .05], [.83, .033], [.9, .04], [.95, .031], [.978, 0]]),
+  h: curve([[.02, .5], [.2, .74], [.4, .62], [.5, .5], [.6, .6], [.75, .44], [.84, .36], [.92, .4], [.978, .25]]) };
+const ARM = { c: curve([[-.75, .14], [-.63, .166], [-.52, .226], [-.3, .266], [-.1, .27], [.03, .262], [.2, .25]]), w: curve([[-.665, 0], [-.63, .05], [-.5, .053], [-.38, .044], [-.29, .036], [-.2, .042], [-.05, .03], [.01, .026], [.06, .037], [.1, .03], [.128, 0]]),
+  h: curve([[-.665, .5], [-.55, .58], [-.4, .5], [-.29, .4], [-.2, .44], [0, .3], [.07, .26], [.128, .15]]) };
+function tube(p, x, y, sgn) { const w = p.w(x); if (w <= 0) return 0; const u = (y - sgn * p.c(x)) / w; return u <= -1 || u >= 1 ? 0 : p.h(x) * Math.pow(1 - u * u, 1.15); }
+function capH(x, y) {
+  let q = 0, v;
+  const hx = (x + .835) / .094, hy = y / .074, hu = hx * hx + hy * hy; if (hu < 1) { v = .95 * (1 - hu); q += v * v * v * v; } // head, face in the cradle
+  v = tube(TORSO, x, y, 0); q += v * v * v * v;
+  for (const sgn of [-1, 1]) { v = tube(LEG, x, y, sgn); q += v * v * v * v; v = tube(ARM, x, y, sgn); q += v * v * v * v; }
+  if (q <= 0) return 0;
+  let h = Math.sqrt(Math.sqrt(q)), ay = Math.abs(y); // parts meet like clay
+  const k = Math.min(1, h * 3);
+  h += .09 * k * Math.exp(-((x + .47) * (x + .47)) / .005 - ((ay - .095) * (ay - .095)) / .0026); // shoulder blades
+  if (x > -.68 && x < -.02) h -= .1 * k * Math.exp(-(y * y) / .0005) * clamp((x + .68) / .06, 0, 1) * clamp((-.02 - x) / .06, 0, 1); // the spine is a groove
+  if (x > -.01 && x < .2) h -= .26 * k * Math.exp(-(y * y) / .0005) * clamp((x + .01) / .05, 0, 1) * clamp((.2 - x) / .04, 0, 1);
+  return h > 0 ? h : 0;
+}
+const X0 = -1, X1 = 1, Y0 = -.48, Y1 = .48, GX = 260, GY = 124, NX = GX + 1, DX = (X1 - X0) / GX, DY = (Y1 - Y0) / GY;
+const base = new Float32Array(NX * (GY + 1)), lung = new Float32Array(base.length), Hf = new Float32Array(base.length);
+for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
+  const x = X0 + i * DX, y = Y0 + j * DY, k = j * NX + i;
+  base[k] = capH(x, y); lung[k] = Math.exp(-(((x + .3) / .28) ** 2)) * Math.exp(-((y / .22) ** 2));
+}
+const onBody = (x, y) => capH(x, y) > .05 ? capH(x, y) : 0;
+function grad(x, y) { const e = .012; let gx = (capH(x + e, y) - capH(x - e, y)) / (2 * e), gy = (capH(x, y + e) - capH(x, y - e)) / (2 * e); const m = hyp(gx, gy); if (m > 1.5) { gx *= 1.5 / m; gy *= 1.5 / m; } return [gx, gy]; }
+const LEVELS = [.06, .17, .28, .39, .5, .61, .72, .83, .93];
+const bumps = []; // the suit humming: {x, y, a, r}
+const reliefCv = document.createElement('canvas'); reliefCv.width = NX; reliefCv.height = GY + 1;
+const reliefCtx = reliefCv.getContext('2d'), reliefImg = reliefCtx.createImageData(NX, GY + 1), relief = reliefImg.data;
+for (let k = 0; k < relief.length; k += 4) { relief[k] = 255; relief[k + 1] = 206; relief[k + 2] = 170; }
+
+/* ---------- zones on a back ---------- */
+const Z = [];
+for (const [part, x, y, r] of [['shoulder', -.59, .125, .066], ['blade', -.44, .095, .068], ['mid back', -.27, .092, .068], ['low back', -.11, .082, .066], ['hip', .07, .082, .07], ['hamstring', .3, .082, .062], ['calf', .64, .077, .052], ['sole', .9, .074, .044]]) {
+  Z.push({ side: 'left', part, x, y, r }); Z.push({ side: 'right', part, x, y: -y, r });
+}
+function noGo(x, y) {
+  if (x > -.66 && x < 0 && Math.abs(y) < .026) return 'spine';
+  if (x > -.76 && x <= -.66 && Math.abs(y) < .07) return 'neck';
+  if (hyp(x + .83, y) < .1) return 'head';
+  if (Math.abs(x - .5) < .03 && Math.abs(Math.abs(y) - .078) < .062) return 'knee';
+  return '';
+}
+
+/* ---------- state ---------- */
+const S = { screen: 'lobby', run: null, runI: 0, tension: .78, read: .78, conf: .9, breath: 0, lean: 0, leanT: 0, ceiling: 3, stopped: false, results: {}, t: 0, hover: '' };
+let G = null;
+const floaters = [];
+const say = (x, y, text, col) => floaters.push({ x, y, text, col: col || C.ink, t: 0 });
+function ease(dv) { S.tension = clamp(S.tension + dv, 0, 1); if (Math.abs(dv) > .012) S.conf = Math.min(S.conf, .58); }
+const WORDS = [[.08, 'braced'], [.335, 'caffeinated'], [.595, 'still'], [.67, 'curious'], [.76, 'arriving'], [.93, 'calm'], [2, 'puddle']];
+const wordFor = s => WORDS.find(w => s < w[0])[1];
+function pickLean() {
+  const s = 1 - S.tension, pool = s < .34 ? ['hush', 'wave'] : s < .67 ? ['knead', 'wave', 'wake'] : ['wave', 'hush', 'knead'];
+  const id = pick(pool.filter(p => p !== SETS[S.lean].id)); S.lean = SETS.findIndex(x => x.id === id); S.leanT = rnd(8, 12);
+}
+
+/* ---------- canvas and layout ---------- */
+const cv = $('#table'), ctx = cv.getContext('2d');
+let W = 0, Hh = 0, dpr = 1, s = 300, cx = 0, cy = 0, tall = false;
+const toS = (bx, by) => tall ? [cx - by * s, cy + bx * s] : [cx + bx * s, cy + by * s];
+const toB = (px, py) => tall ? [(py - cy) / s, -(px - cx) / s] : [(px - cx) / s, (py - cy) / s];
+function layout() {
+  W = innerWidth; Hh = innerHeight; dpr = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr);
+  tall = Hh > W * 1.05;
+  const small = W <= 760, toolsB = $('#tools').getBoundingClientRect().bottom;
+  $('#head').style.top = small ? (toolsB + 10) + 'px' : '';
+  const head = $('#head').getBoundingClientRect(), slot = $('#slot').offsetHeight, bar = !$('#stops').hidden ? $('#stops') : !$('#pads').hidden ? $('#pads') : null;
+  const stopsH = bar ? bar.offsetHeight + 14 : 0;
+  const top = head.bottom + 10, bot = Hh - slot - stopsH - 14;
+  if (tall) { s = Math.min(W * .96 / .98, (bot - top) / 2.02); cx = W / 2; cy = (top + bot) / 2 - .015 * s; }
+  else {
+    s = Math.min(W * .95 / 2.06, (bot - top) / .94); cx = W / 2 - .015 * s; cy = (top + bot) / 2;
+    const topA = toolsB + 10, availW = W - head.right - 44, sA = Math.min(availW / 2.04, (bot - topA) / .94); // beside the header
+    if (sA > s * 1.04) { s = sA; cx = head.right + 22 + 1.0 * s; cy = (topA + bot) / 2; }
+  }
+  s = Math.max(s, 90);
+}
+addEventListener('resize', layout);
+
+/* ---------- the hand ---------- */
+const P = { x: -999, y: -999, bx: 9, by: 9, down: false, inside: false, speed: 0, lt: 0 };
+const L = { x: 0, y: 0 }; // the lamp lags the hand
+function moveTo(px, py, now) {
+  const [bx, by] = toB(px, py), dt = Math.max(.004, (now - P.lt) / 1000);
+  if (P.inside) P.speed = lerp(P.speed, hyp(bx - P.bx, by - P.by) / dt, .35);
+  P.x = px; P.y = py; P.bx = bx; P.by = by; P.lt = now; P.inside = true;
+  if (G && G.kind === 'golf' && G.aim) { G.aim.x1 = bx; G.aim.y1 = by; }
+}
+function press() {
+  if (S.stopped) return; P.down = true; audioWake();
+  if (S.screen === 'table') { placeCue(); return; }
+  if (S.screen === 'lobby') { const st = STOPS.find(q => hyp(P.bx - q.x, P.by - q.y) < .1); if (st) { S.run = null; start(st.g); } return; }
+  if (!G || G.over) return;
+  if (G.kind === 'call') { nextCall(); return; }
+  if (G.kind === 'golf') { const b = G.ball; if (!b.moving && !G.wait && hyp(P.bx - b.x, P.by - b.y) < .15) G.aim = { x0: P.bx, y0: P.by, x1: P.bx, y1: P.by, t0: performance.now() }; }
+  if (G.kind === 'hogs') for (const h of G.hogs) h.last = null;
+}
+function release() {
+  P.down = false; motor(false);
+  if (G && G.kind === 'golf' && G.aim) strike();
+}
+cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); P.inside = false; moveTo(e.clientX, e.clientY, e.timeStamp); press(); });
+cv.addEventListener('pointermove', e => moveTo(e.clientX, e.clientY, e.timeStamp));
+cv.addEventListener('pointerup', e => { release(); if (e.pointerType !== 'mouse') P.inside = false; });
+cv.addEventListener('pointercancel', () => { release(); P.inside = false; });
+cv.addEventListener('pointerleave', e => { if (!P.down && e.pointerType === 'mouse') P.inside = false; });
+// keys: the same hand, a second way in
+const K = {};
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (S.screen !== 'lobby' && !S.stopped) stop(); return; }
+  const onTable = document.activeElement === cv || document.activeElement === document.body;
+  if (!onTable) return;
+  if (e.key.startsWith('Arrow')) { K[e.key] = true; e.preventDefault(); if (!P.inside) { const [x, y] = toS(-.2, .1); moveTo(x, y, performance.now()); } }
+  if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); if (!P.inside) { const [x, y] = toS(-.2, .1); moveTo(x, y, performance.now()); } press(); }
+});
+addEventListener('keyup', e => { if (e.key.startsWith('Arrow')) K[e.key] = false; if (e.key === ' ' || e.key === 'Enter') { if (P.down) release(); } });
+
+/* ---------- sound: off until asked ---------- */
+let AC = null, master = null, soundOn = false, mot = null;
+function audioWake() { if (soundOn && AC && AC.state === 'suspended') AC.resume().catch(() => {}); }
+$('#sound').addEventListener('click', () => {
+  soundOn = !soundOn;
+  try { if (soundOn && !AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = .5; master.connect(AC.destination); } if (AC) (soundOn ? AC.resume() : AC.suspend()).catch(() => {}); } catch (err) { soundOn = false; }
+  $('#sound').textContent = soundOn ? 'Sound on' : 'Sound off'; $('#sound').setAttribute('aria-pressed', soundOn);
+  if (soundOn) pluck(2, .5);
+});
+const BP = [0, 2, 4, 6, 8, 10, 13]; // Bohlen–Pierce degrees, thirteen steps to the tritave
+function pluck(k, vol = .5) {
+  if (!soundOn || !AC) return;
+  try {
+    const f = 123.6 * Math.pow(3, (BP[((k % 7) + 7) % 7] + 13 * Math.floor(k / 7)) / 13), sr = AC.sampleRate, N = Math.max(8, Math.round(sr / f)), len = Math.round(sr * 1.3);
+    const buf = AC.createBuffer(1, len, sr), d = buf.getChannelData(0), ring = new Float32Array(N);
+    for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < len; i++) { const a = i % N, b = (i + 1) % N; d[i] = ring[a]; ring[a] = .996 * .5 * (ring[a] + ring[b]); }
+    const src = AC.createBufferSource(), g = AC.createGain(); src.buffer = buf; g.gain.value = vol * .6; src.connect(g); g.connect(master); src.start();
+  } catch (err) {}
+}
+function swish(vol = .3) {
+  if (!soundOn || !AC) return;
+  try {
+    const sr = AC.sampleRate, len = Math.round(sr * .45), buf = AC.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) { const e = Math.sin(Math.PI * i / len); d[i] = (Math.random() * 2 - 1) * e * e; }
+    const src = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain(); f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = .7; g.gain.value = vol;
+    src.buffer = buf; src.connect(f); f.connect(g); g.connect(master); src.start();
+  } catch (err) {}
+}
+function motor(on, hz = 20, vol = .22) { // the gun's purr
+  if (!soundOn || !AC) { mot = null; return; }
+  try {
+    if (on) {
+      if (!mot) { const o = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o.type = 'square'; f.type = 'lowpass'; f.frequency.value = 260; g.gain.value = 0; o.connect(f); f.connect(g); g.connect(master); o.start(); mot = { o, g }; }
+      mot.o.frequency.setTargetAtTime(hz, AC.currentTime, .04); mot.g.gain.setTargetAtTime(vol, AC.currentTime, .03);
+    } else if (mot) { const m = mot; mot = null; m.g.gain.setTargetAtTime(0, AC.currentTime, .04); m.o.stop(AC.currentTime + .3); }
+  } catch (err) { mot = null; }
+}
+const tick = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (err) {} };
+
+/* ---------- screens ---------- */
+const HEAD = {
+  lobby: ['Maesage · the Tabble', 'One lays on the table and the other… <em>plays</em>.'],
+  moles: ['Game 01 — Moles', 'The gun <em>tunes</em> itself.'],
+  hogs: ['Game 02 — Hedgehogs', 'Knots with <em>legs</em>.'],
+  golf: ['Game 03 — Golf', 'The cup is the <em>knot</em>.'],
+  call: ['Game 04 — Call', 'Real <em>hands</em>.'],
+  flip: ['Game 05 — Flip', 'They <em>call</em> it.'],
+  table: ['On the table', 'You <em>call</em> it.'],
+};
+let hintNow = '';
+function hint(t) { if (t !== hintNow) { hintNow = t; $('#hint').textContent = t; } }
+let headNow = ['', ''];
+function setHead(k, eyebrow, title) {
+  const h = HEAD[k] || HEAD.lobby, e = eyebrow || h[0], t = title || h[1];
+  if (e !== headNow[0]) { headNow[0] = e; $('#eyebrow').textContent = e; }
+  if (t !== headNow[1]) { headNow[1] = t; $('#title').innerHTML = t; if (S.screen === 'call') layout(); }
+}
+function show(screen) {
+  S.screen = screen; const play = screen !== 'lobby';
+  document.body.classList.toggle('playing', play);
+  $('#stops').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#role').hidden = play;
+  $('#legend').hidden = !(screen === 'moles' || screen === 'flip'); document.body.classList.toggle('calling', screen === 'call');
+  if (screen !== 'end') setHead(screen);
+  floaters.length = 0; motor(false); layout();
+}
+function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } show('lobby'); hint('Pick a stop on the body, or begin and play all three down the back.'); }
+function start(kind) {
+  show(kind); pickLean();
+  ({ moles: startMoles, hogs: startHogs, golf: startGolf, call: startCall, flip: startFlip })[kind]();
+  cv.focus({ preventScroll: true });
+}
+function done(result) { G.over = true; G.after = S.run && S.runI < S.run.length - 1 ? 2.2 : 1.1; G.result = result; S.results[G.kind] = result; motor(false); }
+function advance() {
+  if (S.run && S.runI < S.run.length - 1) { S.runI++; start(S.run[S.runI]); return; }
+  const k = G.kind, whole = !!S.run, settle = 1 - S.tension, pct = pad(settle * 100, 3);
+  let best = 0; try { best = +localStorage.getItem('maesage:best') || 0; if (whole && settle * 100 > best) localStorage.setItem('maesage:best', Math.round(settle * 100)); } catch (err) {}
+  const lines = (whole ? ['moles', 'hogs', 'golf'] : [k]).map(g => S.results[g] ? `<li><b>${NAMES[g]}</b> · ${S.results[g].line}</li>` : '').join('');
+  const truth = k === 'call' ? 'Ten calls. Now swap places.' : whole ? (settle >= .93 ? 'Nobody on this table is getting up soon.' : settle >= .76 ? 'Calm. The calves still have opinions.' : settle >= .5 ? 'Arriving, not arrived. Slower hands next round.' : 'Still caffeinated. Slower hands next round.') : G.result.truth;
+  $('#cardEyebrow').textContent = k === 'call' ? 'Call · done' : `${whole ? 'Down the back' : NAMES[k]} · settled ${pct}%${whole && best ? ` · best ${pad(Math.max(best, settle * 100), 3)}%` : ''}`;
+  $('#cardWord').textContent = k === 'call' ? 'swap' : wordFor(settle); $('#cardWord').style.setProperty('--w', 50 + 100 * (k === 'call' ? .7 : settle));
+  $('#cardLines').innerHTML = lines; $('#cardTruth').textContent = truth;
+  S.last = whole ? 'run' : k; S.screen = 'end'; $('#card').hidden = false; $('#again').focus({ preventScroll: true });
+  hint(k === 'call' ? 'The table is yours.' : 'The receiver keeps what you gave them until you start a fresh round.');
+}
+const NAMES = { moles: 'Moles', hogs: 'Hedgehogs', golf: 'Golf', call: 'Call', flip: 'Flip' };
+function begin() { S.tension = .78; S.read = .78; S.results = {}; S.run = ['moles', 'hogs', 'golf']; S.runI = 0; start('moles'); }
+$('#begin').addEventListener('click', begin);
+document.querySelectorAll('.stop').forEach(b => {
+  b.addEventListener('click', () => { S.run = null; start(b.dataset.game); });
+  b.addEventListener('pointerenter', () => S.hover = b.dataset.game); b.addEventListener('focus', () => S.hover = b.dataset.game);
+  b.addEventListener('pointerleave', () => S.hover = ''); b.addEventListener('blur', () => S.hover = '');
+});
+$('#leave').addEventListener('click', lobby);
+$('#back').addEventListener('click', lobby);
+$('#again').addEventListener('click', () => { if (S.last === 'run') begin(); else { S.run = null; start(S.last); } });
+function stop(by) { // latched. A stop from the table's own screen can only be lifted there.
+  S.stopped = true; S.stopBy = by === 'remote' ? 'remote' : 'local'; P.down = false; motor(false); if (G) G.aim = null;
+  if (ROLE === 'table') { T.stopped = true; publish(); }
+  const remote = S.stopBy === 'remote'; $('#resume').hidden = remote; $('#stoppedBack').hidden = remote;
+  $('#stoppedNote').textContent = remote ? 'Lights out, gun off. It starts again from their screen.' : 'Lights out, gun off. Only the person on the table starts it again.';
+  $('#stopped').hidden = false; if (!remote) $('#resume').focus({ preventScroll: true });
+}
+function resume() { S.stopped = false; $('#stopped').hidden = true; if (ROLE === 'table') { T.stopped = false; publish(); } cv.focus({ preventScroll: true }); }
+$('#stop').addEventListener('click', () => stop());
+$('#resume').addEventListener('click', resume);
+$('#stoppedBack').addEventListener('click', () => { resume(); lobby(); });
+function setCeil(d) { S.ceiling = clamp(S.ceiling + d, 1, 4); $('#ceil').textContent = `Ceiling ${S.ceiling} / 4`; if (d && ROLE === 'table') publish(); }
+$('#ceilDn').addEventListener('click', () => setCeil(-1)); $('#ceilUp').addEventListener('click', () => setCeil(1));
+
+/* ---------- two screens: the one on the table calls it ---------- */
+// Presence is the whole wire: the table publishes what it asked for, players publish what they answered.
+// It is display data from another screen, so everything read from it is clamped and re-checked here.
+let ROLE = 'play', room = null, peers = [];
+const T = { cues: [], n: 0, stopped: false, set: 0, trick: false }, localHits = [], me = Math.random().toString(36).slice(2, 8);
+function cleanCues(a) {
+  if (!Array.isArray(a)) return [];
+  return a.slice(-6).map(c => c && typeof c === 'object' ? { id: String(c.id).slice(0, 24), x: clamp(+c.x || 0, -1, 1), y: clamp(+c.y || 0, -.48, .48), set: clamp(Math.floor(+c.set || 0), 0, 3), kind: c.kind === 'decoy' ? 'decoy' : 'real' } : null).filter(c => c && onBody(c.x, c.y) > 0 && !noGo(c.x, c.y));
+}
+const others = role => peers.filter(p => !p.sameTab && p.kind === 'viewer' && p.presence && p.presence.role === role);
+function tableSource() {
+  const r = others('table').sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  return r ? { remote: true, present: true, cues: cleanCues(r.presence.cues), stopped: r.presence.stopped === true, ceiling: clamp(Math.floor(+r.presence.ceiling) || 0, 0, 4) } : { remote: false, present: T.cues.length > 0, cues: T.cues, stopped: false, ceiling: 0 };
+}
+const answered = id => localHits.includes(id) || others('play').some(p => Array.isArray(p.presence.hits) && p.presence.hits.includes(id));
+function publish() {
+  if (!room) return;
+  const body = ROLE === 'table' ? { role: 'table', cues: T.cues.filter(c => !c.out).map(c => ({ id: c.id, x: +c.x.toFixed(3), y: +c.y.toFixed(3), set: c.set, kind: c.kind })), stopped: T.stopped, ceiling: S.ceiling, hits: null } : { role: 'play', hits: localHits.slice(-12), cues: null, stopped: null, ceiling: null };
+  try { room.presence(body).catch(() => {}); } catch (err) {}
+}
+(async () => {
+  try { for (let i = 0; i < 20 && !(window.claude && window.claude.use); i++) await new Promise(ok => setTimeout(ok, 250)); // the room lights up when it can; the page never waits for it
+    if (!window.claude || !window.claude.use) return; const r = await window.claude.use('room'); if (!r) return; room = r; r.onPeers(ch => { peers = ch.peers; }, () => { room = null; peers = []; }); publish(); } catch (err) {}
+})();
+function syncRoom() { // a player follows the table's stop and ceiling
+  if (ROLE !== 'play') return;
+  const src = tableSource();
+  if (src.remote) {
+    if (src.stopped && !S.stopped) stop('remote'); else if (!src.stopped && S.stopped && S.stopBy === 'remote') resume();
+    if (src.ceiling && src.ceiling !== S.ceiling) { S.ceiling = src.ceiling; setCeil(0); }
+  } else if (S.stopped && S.stopBy === 'remote') { S.stopBy = 'local'; $('#resume').hidden = false; $('#stoppedBack').hidden = false; $('#stoppedNote').textContent = 'Their screen went away. Ask them before you start again.'; }
+}
+function enterTable() { ROLE = 'table'; G = null; S.run = null; show('table'); publish(); cv.focus({ preventScroll: true }); }
+$('#role').addEventListener('click', enterTable);
+document.querySelectorAll('.pad[data-set]').forEach(b => {
+  const st = SETS[+b.dataset.set]; b.innerHTML = `${glyphSvg(st)}<span>${st.id}</span>`; b.style.setProperty('--pad', st.col);
+  b.addEventListener('click', () => { T.set = +b.dataset.set; document.querySelectorAll('.pad[data-set]').forEach(o => o.setAttribute('aria-pressed', o === b)); });
+});
+$('#trick').addEventListener('click', () => { T.trick = !T.trick; $('#trick').setAttribute('aria-pressed', T.trick); $('#trick').textContent = T.trick ? 'Trick on' : 'Trick off'; });
+function placeCue() {
+  const x = P.bx, y = P.by; if (!onBody(x, y)) return;
+  const ng = noGo(x, y); if (ng) { say(x, y, `not the ${ng}. the gun stays off it.`, C.danger); tick(20); return; }
+  T.cues.push({ id: `${me}-${++T.n}`, x, y, z: { x, y, r: .066 }, set: T.set, kind: T.trick ? 'decoy' : 'real', age: 0, inv: .3, win: 16, fill: 0, out: 0 });
+  if (T.cues.filter(c => !c.out).length > 5) T.cues.find(c => !c.out).out = .001;
+  say(x, y, T.trick ? 'a trick. lit and flat.' : SETS[T.set].id, SETS[T.set].col); pluck(2 + T.set, .4); tick(6); publish();
+}
+function updTable(dt) {
+  let changed = false;
+  for (const c of T.cues) {
+    c.age += dt;
+    if (c.out) { c.out += dt; continue; }
+    if (c.kind === 'real') bumps.push({ x: c.x, y: c.y, a: .16 * clamp(c.age / c.inv, 0, 1), r: .15 });
+    if (answered(c.id)) { c.out = .001; c.won = true; changed = true; say(c.x, c.y, c.kind === 'decoy' ? 'they fell for it' : 'answered', C.cue); pluck(5, .5); tick(8); }
+    else if (c.age > c.inv + c.win) { c.out = .001; changed = true; }
+  }
+  const n = T.cues.length; T.cues = T.cues.filter(c => c.out < .6); if (changed || n !== T.cues.length) publish();
+  const here = others('play').length;
+  hint(!room ? 'Pick a setting, then touch where you want it. Hand this screen over, or open the page on a second one.' : here ? `${here} other screen${here > 1 ? 's' : ''} here. Pick a setting, then touch where you want it.` : 'No other screen has this page open yet. What you place waits here.');
+}
+
+/* ---------- 05 flip: they place the spots, you answer ---------- */
+function startFlip() { G = { kind: 'flip', cues: [], seen: {}, hit: 0, real: 0, streak: 0, best: 0, fooled: 0, tuned: -1, cut: '', auto: 1.2, autoN: 0, live: false, sore: [pick(Z), pick(Z)] }; }
+function feedFlip(dt) {
+  const src = tableSource();
+  if (src.present && !G.live) { G.live = true; for (const c of G.cues) if (!c.id && !c.out) c.out = .001; } // the rehearsal steps aside
+  for (const c of src.cues) if (!G.seen[c.id] && !c.out && !localHits.includes(c.id)) {
+    G.seen[c.id] = 1; if (c.kind === 'real') G.real++;
+    G.cues.push({ id: c.id, z: { x: c.x, y: c.y, r: .066 }, set: c.set, kind: c.kind, age: 0, inv: .5, win: 15, fill: 0, out: 0, told: false });
+  }
+  if (G.live) return;
+  G.auto -= dt; // nobody on the table: a rehearsal asks, and keeps asking near two sore spots
+  if (G.auto <= 0 && G.autoN < 12 && G.cues.filter(c => !c.out).length < 2) {
+    for (let tries = 0; tries < 20; tries++) {
+      const q = pick(G.sore), x = q.x + rnd(-.09, .09), y = q.y + rnd(-.06, .06);
+      if (onBody(x, y) > .2 && !noGo(x, y) && !G.cues.some(c => hyp(c.z.x - x, c.z.y - y) < .2)) {
+        const kind = G.autoN > 1 && Math.random() < .18 ? 'decoy' : 'real'; G.autoN++; if (kind === 'real') G.real++;
+        G.cues.push({ z: { x, y, r: .066 }, set: Math.random() < .5 ? S.lean : Math.floor(rnd(4)), kind, age: 0, inv: .6, win: 5, fill: 0, out: 0, told: false }); break;
+      }
+    }
+    G.auto = rnd(1.5, 2.5);
+  }
+}
+function answer(c) { if (!c.id) return; localHits.push(c.id); if (localHits.length > 40) localHits.shift(); const i = T.cues.findIndex(t => t.id === c.id); if (i >= 0) T.cues.splice(i, 1); publish(); }
+function endFlip() {
+  if (G.live) { hint(`They are calling it from the table. ${G.hit} answered${G.fooled ? `, fooled ${G.fooled}` : ''}.`); return; }
+  hint(`Nobody is on the table. Open this page on a second screen and choose On the table. A rehearsal asks until then. ${pad(G.hit, 2)} / 12 answered.`);
+  if (G.autoN >= 12 && !G.cues.length) { hint(`Rehearsal done. ${G.hit} / ${G.real} answered.`); done({ line: `${G.hit} / ${G.real} answered · fooled ${G.fooled}`, truth: 'That was a rehearsal. The real one needs somebody on the table.' }); }
+}
+
+/* ---------- 01 moles ---------- */
+function startMoles() {
+  const seq = [...Array(12).fill('real'), ...Array(4).fill('decoy'), ...Array(3).fill('tease')].sort(() => Math.random() - .5);
+  for (let i = 0; i < 2; i++) if (seq[i] !== 'real') { const j = seq.indexOf('real', 2); [seq[i], seq[j]] = [seq[j], seq[i]]; }
+  G = { kind: 'moles', seq, i: 0, next: .7, cues: [], hit: 0, real: 12, streak: 0, best: 0, fooled: 0, tuned: -1, cut: '', t: 0 };
+}
+function spawnCue() {
+  const kind = G.seq[G.i], prog = G.i / G.seq.length; G.i++;
+  const free = Z.filter(z => z !== G.lastZ && !G.cues.some(c => !c.out && hyp(c.z.x - z.x, c.z.y - z.y) < .24)), z = pick(free.length ? free : Z); G.lastZ = z;
+  const set = Math.random() < .4 ? S.lean : Math.floor(rnd(4));
+  G.cues.push({ z, set, kind, age: 0, inv: .8, win: kind === 'tease' ? 1.5 : lerp(3.2, 2.1, prog), fill: 0, out: 0, told: false });
+}
+function updMoles(dt) {
+  if (G.kind === 'flip') feedFlip(dt);
+  else { G.next -= dt; if (G.next <= 0 && G.i < G.seq.length && G.cues.filter(c => !c.out).length < 3) { spawnCue(); G.next = lerp(1.45, .85, G.i / G.seq.length); } }
+  let under = null, ud = 1;
+  for (const c of G.cues) {
+    c.age += dt;
+    if (c.out) { c.out += dt; continue; }
+    if (c.kind !== 'decoy') bumps.push({ x: c.z.x, y: c.z.y, a: .16 * clamp(c.age / c.inv, 0, 1), r: .15 });
+    const d = hyp(P.bx - c.z.x, P.by - c.z.y);
+    if (P.inside && d < c.z.r + .02 && d < ud && c.age > .25) { under = c; ud = d; }
+    if (c.age > c.inv + c.win) { c.out = .001; if (c.kind === 'real') { G.streak = 0; say(c.z.x, c.z.y, 'gone', C.muted); } }
+  }
+  G.cut = P.inside ? noGo(P.bx, P.by) : '';
+  G.tuned = under && under.kind !== 'tease' && !G.cut ? under.set : -1;
+  for (const c of G.cues) if (c !== under || !P.down) c.fill = Math.max(0, c.fill - dt * .9);
+  if (P.down) {
+    if (G.cut) { motor(false); ease(.02 * dt); if (!G.cutTold) { G.cutTold = true; say(P.bx, P.by, `the gun cuts out over the ${G.cut}`, C.danger); tick(20); } }
+    else {
+      G.cutTold = false;
+      const st = G.tuned >= 0 ? SETS[G.tuned] : null, capped = st ? Math.max(0, st.level - S.ceiling) : 0;
+      motor(true, st ? st.f : 16, st ? .24 - .04 * capped : .1);
+      if (under && under.kind === 'tease' && !under.told) { under.told = true; say(under.z.x, under.z.y, 'that one is for them', C.muted); }
+      if (under && st) {
+        under.fill += dt / (st.hold * (1 + .25 * capped));
+        if (under.kind === 'decoy' && under.fill > .42) { under.out = .001; G.streak = 0; G.fooled++; say(under.z.x, under.z.y, 'feint. it never rippled.', C.ink); tick(20); pluck(0, .3); answer(under); }
+        else if (under.fill >= 1) {
+          under.out = .001; under.won = true; G.hit++; G.streak++; G.best = Math.max(G.best, G.streak);
+          const lean = under.set === S.lean && !G.live; if (!G.live) ease(-.028 * (lean ? 1.4 : 1) * (1 + Math.min(G.streak, 6) * .06)); answer(under);
+          say(under.z.x, under.z.y, lean ? `${st.id}. their lean.` : st.id, st.col); pluck(1 + under.set + Math.min(G.streak, 6), .5); tick(8);
+        }
+      }
+    }
+  } else G.cutTold = false;
+  G.cues = G.cues.filter(c => c.out < .6);
+  if (G.kind === 'flip') { endFlip(); return; }
+  hint(`Lit and rippling is real. Lit and flat is a feint. ${pad(G.hit, 2)} / ${G.real} settled.`);
+  if (G.i >= G.seq.length && !G.cues.length) {
+    const t = G.hit === G.real ? 'Twelve for twelve. The feints are embarrassed.' : G.fooled > 1 ? `The suit fooled you ${G.fooled} times. It is keeping count.` : 'Some got away. They always light up again.';
+    hint(`Moles done. ${pad(G.hit, 2)} / ${G.real} settled.${S.run ? ' Hedgehogs next. Put the gun down.' : ''}`);
+    done({ line: `${G.hit} / ${G.real} settled · best streak ${G.best} · fooled ${G.fooled}`, truth: t });
+  }
+}
+function drawGlyph(id, x, y, r, col) {
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = Math.max(1.4, r * .2); ctx.lineCap = 'round'; ctx.beginPath();
+  if (id === 'hush') { ctx.arc(x, y, r * .34, 0, TAU); ctx.fill(); }
+  else if (id === 'wave') { ctx.moveTo(x - r, y); ctx.bezierCurveTo(x - r * .6, y - r, x - r * .3, y - r, x, y); ctx.bezierCurveTo(x + r * .3, y + r, x + r * .6, y + r, x + r, y); ctx.stroke(); }
+  else if (id === 'wake') { for (const [ox, oy] of [[0, -.6], [-.62, .5], [.62, .5]]) { ctx.moveTo(x + ox * r + r * .24, y + oy * r); ctx.arc(x + ox * r, y + oy * r, r * .24, 0, TAU); } ctx.fill(); }
+  else { ctx.arc(x, y, r * .78, 0, TAU); ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, r * .22, 0, TAU); ctx.fill(); }
+}
+function drawHum(x, y, r, a) { // white ripples: the suit is buzzing here, whatever the light says
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < 3; i++) { const u = still ? (i + 1) / 3.5 : (S.t * .9 + i / 3) % 1; ctx.strokeStyle = hexA(C.ink, .5 * a * (1 - u)); ctx.beginPath(); ctx.arc(x, y, r * (1.15 + 1.5 * u), 0, TAU); ctx.stroke(); }
+}
+function drawCue(c, lit = 1) {
+  if (c.kind !== 'decoy' && !c.out) { const [hx, hy] = toS(c.z.x, c.z.y); drawHum(hx, hy, Math.max(15, c.z.r * s), clamp(c.age / c.inv, 0, 1) * clamp((c.inv + c.win - c.age) / .3, 0, 1)); }
+  if (c.kind === 'tease') return;
+  const [x, y] = toS(c.z.x, c.z.y), r = Math.max(15, c.z.r * s), st = SETS[c.set];
+  const a = (c.out ? clamp(1 - c.out / .5, 0, 1) : clamp(c.age / c.inv, 0, 1)) * lit, pop = c.out && c.won ? 1 + c.out * 1.6 : 1;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.1 * pop);
+  g.addColorStop(0, hexA(st.col, .5 * a)); g.addColorStop(.45, hexA(st.col, .2 * a)); g.addColorStop(1, hexA(st.col, 0));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.1 * pop, 0, TAU); ctx.fill();
+  ctx.strokeStyle = hexA(st.col, .9 * a); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r * pop, 0, TAU); ctx.stroke();
+  if (c.out) return;
+  const left = clamp(1 - (c.age - c.inv) / c.win, 0, 1); // the window closing
+  ctx.strokeStyle = hexA(st.col, .55 * a); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r + 6, -TAU / 4, -TAU / 4 + TAU * left); ctx.stroke();
+  ctx.fillStyle = hexA(C.void, .6 * a); ctx.beginPath(); ctx.arc(x, y, r * .56, 0, TAU); ctx.fill();
+  ctx.globalAlpha = a; drawGlyph(st.id, x, y, r * .34, st.col); ctx.globalAlpha = 1;
+  if (c.fill > 0) { ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(x, y, r - 4, -TAU / 4, -TAU / 4 + TAU * Math.min(1, c.fill)); ctx.stroke(); }
+}
+
+/* ---------- 02 hedgehogs ---------- */
+function startHogs() {
+  const spots = [[-.45, .08], [-.22, -.09], [.05, .08], [.3, -.084], [.6, .077]];
+  G = { kind: 'hogs', hogs: spots.map(([x, y]) => ({ x, y, a: rnd(TAU), calm: 0, br: 0, state: 'roam', turn: rnd(1, 3), last: null, vx: 0, vy: 0, spin: 0, wob: rnd(TAU) })), curled: 0, bristled: 0, t: 0, limit: 80 };
+}
+function updHogs(dt) {
+  G.t += dt; let live = 0;
+  for (const h of G.hogs) {
+    if (h.state === 'gone') continue;
+    if (h.state === 'ball') {
+      live++;
+      let [gx, gy] = grad(h.x, h.y); if (hyp(gx, gy) < .08) { gy = -(h.y >= 0 ? 1 : -1) * .5; }
+      if (onBody(h.x, h.y) > 0) { h.vx -= gx * .3 * dt; h.vy -= gy * .3 * dt; }
+      const v = hyp(h.vx, h.vy); if (v > .34) { h.vx *= .34 / v; h.vy *= .34 / v; }
+      h.x += h.vx * dt; h.y += h.vy * dt; h.spin += v * dt * 30;
+      if (Math.abs(h.y) > .56 || Math.abs(h.x) > 1.1) { h.state = 'gone'; }
+      continue;
+    }
+    live++;
+    const d = hyp(P.bx - h.x, P.by - h.y);
+    h.br = Math.max(0, h.br - dt * .7);
+    if (P.inside && P.speed > 1.15 && d < .17 && h.br < .25) {
+      h.br = 1; h.calm = Math.max(0, h.calm - .22); h.a = Math.atan2(h.y - P.by, h.x - P.bx); h.last = null; G.bristled++; ease(.012);
+      say(h.x, h.y, 'bristled', C.danger); tick(20);
+    }
+    const held = P.down && d < .09 && h.br < .3;
+    if (held) {
+      if (d > .012) {
+        const ang = Math.atan2(P.by - h.y, P.bx - h.x);
+        if (h.last !== null) { let da = ang - h.last; da = Math.atan2(Math.sin(da), Math.cos(da)); if (P.speed < .75) h.calm += Math.abs(da) / (TAU * 2.2); else if (!h.told) { h.told = true; say(h.x, h.y, 'slower', C.cue); } }
+        h.last = ang;
+      }
+      if (h.calm >= 1) {
+        h.state = 'ball'; h.calm = 1; G.curled++; ease(-.05); say(h.x, h.y, 'curled', C.cue); pluck(3 + G.curled, .5); tick(8);
+      }
+    } else {
+      h.last = null; h.turn -= dt; if (h.turn <= 0) { h.a += rnd(-1.2, 1.2); h.turn = rnd(1.2, 3.2); }
+      const sp = (h.br > .25 ? .16 : .026) * (1 - h.calm * .6), nx = h.x + Math.cos(h.a) * sp * dt, ny = h.y + Math.sin(h.a) * sp * dt;
+      if (onBody(nx + Math.cos(h.a) * .03, ny + Math.sin(h.a) * .03) > .24 && !noGo(nx, ny)) { h.x = nx; h.y = ny; h.wob += dt * (h.br > .25 ? 30 : 9); } else h.a += Math.PI * rnd(.55, 1.2);
+    }
+  }
+  hint(`Slow circles over a hedgehog. Rush and it bristles. ${G.curled} / ${G.hogs.length} curled.`);
+  const left = G.hogs.filter(h => h.state === 'roam').length;
+  if ((!live && G.curled === G.hogs.length) || (G.t > G.limit && !G.hogs.some(h => h.state === 'ball'))) {
+    const t = left ? `${left} still out there. They will be back as knots.` : G.bristled ? `${G.bristled} bristled. Hedgehogs can tell when you are in a hurry.` : 'Not one bristle. They would like you to know they noticed.';
+    hint(`Hedgehogs done. ${G.curled} / ${G.hogs.length} curled.${S.run ? ' Golf next. One long glide a stroke.' : ''}`);
+    done({ line: `${G.curled} / ${G.hogs.length} curled · ${G.bristled} bristled · ${Math.round(G.t)} s`, truth: t });
+  }
+}
+const QUILLS = []; // anchors on the back, in hedgehog units
+for (const [ring, n] of [[.28, 5], [.56, 9], [.84, 13]]) for (let i = 0; i < n; i++) { const a = lerp(1.25, TAU - 1.25, (i + .5 * (n % 2 ? 0 : 0)) / (n - 1)); QUILLS.push([-.28 + Math.cos(a) * ring * .92, Math.sin(a) * ring * .78]); }
+function drawHog(h) {
+  if (h.state === 'gone') return;
+  const [x, y] = toS(h.x, h.y), r = clamp(.04 * s, 12, 24);
+  const [hx, hy] = toS(h.x + Math.cos(h.a), h.y + Math.sin(h.a)), ang = Math.atan2(hy - y, hx - x);
+  ctx.save(); ctx.translate(x, y); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (h.state === 'ball') { // curled: a ball of quills, rolling
+    ctx.rotate(h.spin); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.4; ctx.beginPath();
+    for (let i = 0; i < 18; i++) { const a = i / 18 * TAU; ctx.moveTo(Math.cos(a) * r * .7, Math.sin(a) * r * .7); ctx.lineTo(Math.cos(a + .35) * r * 1.02, Math.sin(a + .35) * r * 1.02); }
+    ctx.stroke(); ctx.fillStyle = C.raised; ctx.beginPath(); ctx.arc(0, 0, r * .74, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(r * .12, 0, r * .3, .4, TAU - 1.2); ctx.stroke();
+    ctx.restore(); return;
+  }
+  ctx.rotate(ang + Math.sin(h.wob) * .06);
+  const hot = h.br > .25, step = Math.sin(h.wob) * r * .12;
+  ctx.fillStyle = C.ink; ctx.beginPath(); // feet
+  for (const [fx, fy, d] of [[.42, .74, 1], [.42, -.74, -1], [-.62, .7, -1], [-.62, -.7, 1]]) { ctx.moveTo(fx * r + d * step + r * .15, fy * r); ctx.ellipse(fx * r + d * step, fy * r, r * .15, r * .11, 0, 0, TAU); }
+  ctx.fill();
+  ctx.fillStyle = C.raised; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.beginPath(); // body: an egg with a snout
+  ctx.moveTo(r * 1.5, 0); ctx.bezierCurveTo(r * 1.05, -r * .3, r * .7, -r * .86, -r * .25, -r * .86); ctx.bezierCurveTo(-r * 1.02, -r * .86, -r * 1.3, -r * .42, -r * 1.3, 0);
+  ctx.bezierCurveTo(-r * 1.3, r * .42, -r * 1.02, r * .86, -r * .25, r * .86); ctx.bezierCurveTo(r * .7, r * .86, r * 1.05, r * .3, r * 1.5, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const len = r * (.24 + .24 * (1 - h.calm) + .55 * h.br); // quills lie back until it bristles
+  ctx.strokeStyle = hot ? C.danger : C.ink; ctx.lineWidth = 1.4; ctx.beginPath();
+  for (const [qx, qy] of QUILLS) { let dx = qx - .95, dy = qy * (1 + h.br * 1.4), m = hyp(dx, dy); ctx.moveTo(qx * r, qy * r); ctx.lineTo(qx * r + dx / m * len, qy * r + dy / m * len); }
+  ctx.stroke();
+  ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.arc(r * .5, -r * .52, r * .17, 2.4, 5.6); ctx.moveTo(r * .5 + Math.cos(.68) * r * .17, r * .52 + Math.sin(.68) * r * .17); ctx.arc(r * .5, r * .52, r * .17, .68, 3.9); ctx.stroke(); // ears
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(r * 1.48, 0, r * .1, 0, TAU); ctx.moveTo(r * .98, -r * .2); ctx.arc(r * .94, -r * .2, r * .065, 0, TAU); ctx.moveTo(r * .98, r * .2); ctx.arc(r * .94, r * .2, r * .065, 0, TAU); ctx.fill();
+  ctx.restore();
+  if (h.calm > 0) { ctx.strokeStyle = C.cue; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(x, y, r * 2.2, -TAU / 4, -TAU / 4 + TAU * h.calm); ctx.stroke(); }
+}
+
+/* ---------- 03 golf ---------- */
+const HOLES = [{ tee: [-.1, .075], cup: [-.5, -.1], par: 2 }, { tee: [-.5, .1], cup: [.64, .077], par: 3 }, { tee: [.7, -.075], cup: [.3, .084], par: 3 }];
+function startGolf() { G = { kind: 'golf', h: 0, total: 0, par: HOLES.reduce((a, h) => a + h.par, 0), strokes: 0, aim: null, wait: 0, glide: [], rushed: 0 }; tee(); }
+function tee() { const h = HOLES[G.h]; G.ball = { x: h.tee[0], y: h.tee[1], vx: 0, vy: 0, moving: false, sunk: 0 }; G.strokes = 0; G.lip = false; }
+function strike() {
+  const a = G.aim; G.aim = null; const dx = a.x1 - a.x0, dy = a.y1 - a.y0, len = hyp(dx, dy); if (len < .02) return;
+  const dur = Math.max(.05, (performance.now() - a.t0) / 1000), rushed = len / dur > 1.25, b = G.ball;
+  const ang = Math.atan2(dy, dx) + (rushed ? rnd(-.4, .4) : 0), pw = Math.min(len, .5) * (onBody(b.x, b.y) > 0 ? 1 : .6) * 2.75;
+  b.vx = Math.cos(ang) * pw; b.vy = Math.sin(ang) * pw; b.moving = true; G.strokes++; G.total++; G.lip = false;
+  G.glide.push({ x0: a.x0, y0: a.y0, x1: a.x1, y1: a.y1, t: 0 });
+  if (rushed) { G.rushed++; ease(.015); say(a.x1, a.y1, 'rushed', C.danger); tick(20); } else if (len > .12) { ease(-.022); say(a.x1, a.y1, 'long and slow', C.cue); }
+  swish(rushed ? .4 : .25);
+}
+function updGolf(dt) {
+  const b = G.ball, hole = HOLES[G.h];
+  for (const g of G.glide) g.t += dt; G.glide = G.glide.filter(g => g.t < 1.6);
+  if (G.wait) { G.wait -= dt; b.sunk += dt; if (G.wait <= 0) { G.wait = 0; if (G.h < HOLES.length - 1) { G.h++; tee(); } else { const over = G.total - G.par; hint(`Golf done. ${G.total} strokes on a par ${G.par}.`); done({ line: `${G.total} strokes · par ${G.par}${G.rushed ? ` · ${G.rushed} rushed` : ''}`, truth: over <= 0 ? 'Par or better, on a course that breathes.' : `${over} over. The hips are a known hazard.` }); } } return; }
+  if (b.moving) {
+    for (let i = 0; i < 3; i++) {
+      const h = dt / 3, on = onBody(b.x, b.y) > 0, [gx, gy] = on ? grad(b.x, b.y) : [0, 0], mu = on ? 1.7 : 6;
+      b.vx -= gx * .06 * h; b.vy -= gy * .06 * h; const f = Math.exp(-mu * h); b.vx *= f; b.vy *= f; b.x += b.vx * h; b.y += b.vy * h;
+      if (Math.abs(b.y) > .44) { b.y = Math.sign(b.y) * .44; b.vy = 0; } if (b.x > 1.0 || b.x < -.94) { b.x = clamp(b.x, -.94, 1.0); b.vx = 0; }
+      const d = hyp(b.x - hole.cup[0], b.y - hole.cup[1]), v = hyp(b.vx, b.vy);
+      if (d < .05) {
+        if (v < 1.0) { b.moving = false; b.x = hole.cup[0]; b.y = hole.cup[1]; b.sunk = .001; G.wait = 1.5; const o = G.strokes - hole.par; ease(-Math.max(.025, .07 - .02 * Math.max(0, o))); say(b.x, b.y, `in. ${G.strokes} on a par ${hole.par}.`, C.accent); pluck(4 + G.h * 2, .6); tick(8); return; }
+        if (!G.lip) { G.lip = true; say(b.x, b.y, 'lipped out', C.muted); }
+      }
+      if (v < .02) {
+        b.vx = b.vy = 0; b.moving = false;
+        if (d < .09) { b.x = hole.cup[0]; b.y = hole.cup[1]; b.sunk = .001; G.wait = 1.5; ease(-Math.max(.025, .07 - .02 * Math.max(0, G.strokes - hole.par))); say(b.x, b.y, `close enough. ${G.strokes} on a par ${hole.par}.`, C.accent); pluck(4 + G.h * 2, .6); tick(8); return; }
+        if (!on) say(b.x, b.y, 'on the sheet. half power from here.', C.muted); break;
+      }
+    }
+  }
+  hint(`Hole ${G.h + 1} of ${HOLES.length} · par ${hole.par}. Press by the ball and glide toward the flag. Strokes ${G.strokes}.`);
+}
+function drawGolf() {
+  const hole = HOLES[G.h], b = G.ball, [ux, uy] = toS(hole.cup[0], hole.cup[1]), cr = Math.max(9, .034 * s);
+  for (const g of G.glide) { const [ax, ay] = toS(g.x0, g.y0), [zx, zy] = toS(g.x1, g.y1), a = clamp(1 - g.t / 1.6, 0, 1); ctx.strokeStyle = hexA(C.lamp, .3 * a); ctx.lineWidth = Math.max(14, .05 * s); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(zx, zy); ctx.stroke(); }
+  ctx.fillStyle = C.void; ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(ux, uy, cr, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(ux, uy); ctx.lineTo(ux, uy - cr * 3.2); ctx.stroke();
+  ctx.fillStyle = C.accent; ctx.beginPath(); ctx.moveTo(ux, uy - cr * 3.2); ctx.lineTo(ux + cr * 1.5, uy - cr * 2.65); ctx.lineTo(ux, uy - cr * 2.1); ctx.fill();
+  const [tx, ty] = toS(hole.tee[0], hole.tee[1]); ctx.strokeStyle = hexA(C.muted, .6); ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.arc(tx, ty, cr * .9, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+  if (G.aim) {
+    const a = G.aim, dx = a.x1 - a.x0, dy = a.y1 - a.y0, len = hyp(dx, dy);
+    if (len > .02) {
+      const pw = Math.min(len, .5) * (onBody(b.x, b.y) > 0 ? 1 : .6) * 2.75 / 1.7, [px, py] = toS(b.x, b.y), [qx, qy] = toS(b.x + dx / len * pw, b.y + dy / len * pw);
+      ctx.strokeStyle = C.cue; ctx.lineWidth = 1.5; ctx.setLineDash([2, 6]); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(qx, qy); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(qx, qy, 4, 0, TAU); ctx.stroke();
+      const [ax, ay] = toS(a.x0, a.y0), [zx, zy] = toS(a.x1, a.y1); ctx.strokeStyle = hexA(C.lamp, .35); ctx.lineWidth = Math.max(14, .05 * s); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(zx, zy); ctx.stroke();
+    }
+  }
+  const [bx, by] = toS(b.x, b.y), br = Math.max(6, .02 * s) * (b.sunk ? clamp(1 - b.sunk * 2, 0, 1) : 1), lift = onBody(b.x, b.y) * 5;
+  if (br > .5) { ctx.fillStyle = 'rgba(0,0,0,.4)'; ctx.beginPath(); ctx.ellipse(bx + 2, by + 3 + lift * .3, br, br * .8, 0, 0, TAU); ctx.fill(); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(bx, by - lift * .2, br, 0, TAU); ctx.fill(); }
+  if (b.sunk) { const k = b.sunk; ctx.strokeStyle = hexA(C.accent, clamp(1 - k / 1.2, 0, 1)); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(ux, uy, cr + k * 70, 0, TAU); ctx.stroke(); }
+}
+
+/* ---------- 04 call: no suit, no gun, a real back ---------- */
+function startCall() { G = { kind: 'call', n: 10, i: 0, dur: 20, left: 0, z: null, set: 0, from: null, fromT: 0 }; nextCall(true); }
+function nextCall(first) {
+  if (!first && G.fromT > 0) { G.fromT = 0; return; }
+  if (G.i >= G.n) { if (!G.over) { hint('Ten calls. The table is yours.'); done({ line: '10 calls', truth: '' }); } return; }
+  G.i++; const z = pick(Z.filter(q => q !== G.z)); G.set = Math.floor(rnd(4)); G.left = G.dur;
+  G.from = G.i > 1 && Math.random() < .28 ? pick(Z.filter(q => q !== z && q.part !== z.part)) : null; G.fromT = G.from ? 1.6 : 0; G.z = z;
+  pluck(G.set + 2, .5);
+}
+function updCall(dt) {
+  if (G.fromT > 0) { G.fromT -= dt; bumps.push({ x: G.from.x, y: G.from.y, a: .075, r: .13 }); }
+  else { G.left -= dt; bumps.push({ x: G.z.x, y: G.z.y, a: .075, r: .13 }); if (G.left <= 0) nextCall(); }
+  if (G.over) return;
+  const z = G.fromT > 0 ? G.from : G.z, st = SETS[G.set];
+  setHead('call', `Call ${pad(G.i, 2)} / ${G.n} · ${pad(Math.max(0, G.left), 2)} s`, `${z.side} <em>${z.part}</em>`);
+  hint(G.fromT > 0 ? 'Wait for it.' : `${G.from ? 'Feint. It was here all along. ' : ''}${st.hands} Tap the table for the next call.`);
+}
+function drawCall() {
+  const z = G.fromT > 0 ? G.from : G.z, st = SETS[G.set], [x, y] = toS(z.x, z.y), r = Math.max(18, z.r * s * 1.15), pulse = still ? 1 : 1 + .05 * Math.sin(S.t * 3);
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 2.4 * pulse); g.addColorStop(0, hexA(st.col, .55)); g.addColorStop(.45, hexA(st.col, .22)); g.addColorStop(1, hexA(st.col, 0));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 2.4 * pulse, 0, TAU); ctx.fill();
+  ctx.strokeStyle = st.col; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke();
+  drawHum(x, y, r, 1);
+  if (G.fromT <= 0) { ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, r + 7, -TAU / 4, -TAU / 4 + TAU * clamp(G.left / G.dur, 0, 1)); ctx.stroke(); }
+  ctx.fillStyle = hexA(C.void, .6); ctx.beginPath(); ctx.arc(x, y, r * .56, 0, TAU); ctx.fill(); drawGlyph(st.id, x, y, r * .34, st.col);
+}
+
+/* ---------- lobby: the path of the adventure, drawn on the back ---------- */
+const STOPS = [{ g: 'moles', n: '01', x: -.5, y: -.095 }, { g: 'hogs', n: '02', x: -.02, y: .08 }, { g: 'golf', n: '03', x: .62, y: .077 }];
+function pathAt(u) { // 0..1 along the three stops
+  const k = clamp(u, 0, .9999) * 2, i = Math.floor(k), t = k - i, a = STOPS[i], b = STOPS[i + 1], e = t * t * (3 - 2 * t);
+  return [lerp(a.x, b.x, t), lerp(a.y, b.y, e)];
+}
+function drawLobby() {
+  ctx.strokeStyle = hexA(C.muted, .7); ctx.lineWidth = 1.5; ctx.setLineDash([2, 7]); ctx.lineCap = 'round'; ctx.beginPath();
+  for (let u = 0; u <= 1.0001; u += .02) { const [bx, by] = pathAt(u), [x, y] = toS(bx, by); u ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  if (!still) { const [hbx, hby] = pathAt((S.t / 7) % 1), [hx, hy] = toS(hbx, hby); drawHum(hx, hy, Math.max(12, .05 * s), .8); }
+  for (const q of STOPS) {
+    const [x, y] = toS(q.x, q.y), on = S.hover === q.g || (P.inside && hyp(P.bx - q.x, P.by - q.y) < .1), r = on ? 19 : 16;
+    ctx.fillStyle = C.raised; ctx.strokeStyle = on ? C.cue : C.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.font = `500 12px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(q.n, x, y + .5);
+  }
+}
+
+/* ---------- frame ---------- */
+function update(dt) {
+  S.t += dt;
+  P.speed *= Math.exp(-5 * dt);
+  const kx = (K.ArrowRight ? 1 : 0) - (K.ArrowLeft ? 1 : 0), ky = (K.ArrowDown ? 1 : 0) - (K.ArrowUp ? 1 : 0);
+  if (kx || ky) moveTo(clamp(P.x + kx * 230 * dt, 0, W), clamp(P.y + ky * 230 * dt, 0, Hh), performance.now());
+  const tx = P.inside ? P.x : cx, ty = P.inside ? P.y : cy; L.x += (tx - L.x) * Math.min(1, dt * 5); L.y += (ty - L.y) * Math.min(1, dt * 5);
+  bumps.length = 0; syncRoom();
+  const playing = G && !G.over && !S.stopped && G.kind !== 'call' && !G.live;
+  if (playing) { ease(.0035 * dt); S.leanT -= dt; if (S.leanT <= 0) pickLean(); }
+  S.read += (S.tension - S.read) * Math.min(1, dt / 1.1); S.conf += (.92 - S.conf) * Math.min(1, dt / 2.5);
+  S.breath += dt * lerp(19, 7, 1 - S.read) / 60 * TAU;
+  if (S.stopped) return;
+  if (S.screen === 'table') updTable(dt);
+  if (S.screen === 'lobby') { const [bx, by] = pathAt((S.t / 7) % 1); bumps.push({ x: bx, y: by, a: .12, r: .13 }); }
+  if (G && G.over) { G.after -= dt; if (G.after <= 0 && S.screen !== 'end') advance(); }
+  else if (G) ({ moles: updMoles, hogs: updHogs, golf: updGolf, call: updCall, flip: updMoles })[G.kind](dt);
+  for (const f of floaters) f.t += dt;
+  for (let i = floaters.length - 1; i >= 0; i--) if (floaters[i].t > 1.5) floaters.splice(i, 1);
+}
+function field() {
+  const settle = 1 - S.read, br = still ? 0 : Math.sin(S.breath) * (.03 + .05 * settle);
+  for (let k = 0; k < Hf.length; k++) Hf[k] = base[k] * (1 + br * lung[k]);
+  if (still) return;
+  for (const b of bumps) {
+    const i0 = Math.max(0, Math.floor((b.x - b.r - X0) / DX)), i1 = Math.min(GX, Math.ceil((b.x + b.r - X0) / DX)), j0 = Math.max(0, Math.floor((b.y - b.r - Y0) / DY)), j1 = Math.min(GY, Math.ceil((b.y + b.r - Y0) / DY));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      const k = j * NX + i; if (base[k] <= 0) continue;
+      const d = hyp(X0 + i * DX - b.x, Y0 + j * DY - b.y); if (d >= b.r) continue;
+      const w = 1 - (d / b.r) * (d / b.r); Hf[k] += b.a * w * w * Math.sin(46 * d - 13 * S.t);
+    }
+  }
+}
+function bodyXf() { tall ? ctx.setTransform(0, s * dpr, -s * dpr, 0, cx * dpr, cy * dpr) : ctx.setTransform(s * dpr, 0, 0, s * dpr, cx * dpr, cy * dpr); }
+function drawRelief() { // a reflective surface: lit by the lamp, dark away from it
+  const [lx, ly] = toB(L.x, L.y), lz = .42, zs = .2;
+  for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
+    const k = j * NX + i, h = Hf[k], o = k * 4 + 3;
+    if (h < .004) { relief[o] = 0; continue; }
+    const gx = (Hf[i < GX ? k + 1 : k] - Hf[i > 0 ? k - 1 : k]) / (2 * DX) * zs, gy = (Hf[j < GY ? k + NX : k] - Hf[j > 0 ? k - NX : k]) / (2 * DY) * zs;
+    const dx = lx - (X0 + i * DX), dy = ly - (Y0 + j * DY), dz = lz - h * zs, dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    let d = (dz - gx * dx - gy * dy) / (dl * Math.sqrt(gx * gx + gy * gy + 1)); if (d < 0) d = 0;
+    const a = (h < .06 ? h / .06 : 1) * (.075 + .5 * d / (1 + dl * dl * 1.8) + .1 * h);
+    relief[o] = a > .7 ? 178 : a * 255;
+  }
+  reliefCtx.putImageData(reliefImg, 0, 0);
+  bodyXf(); ctx.imageSmoothingEnabled = true; ctx.drawImage(reliefCv, X0 - DX / 2, Y0 - DY / 2, NX * DX, (GY + 1) * DY); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawTable() {
+  bodyXf(); const px = 1 / s;
+  ctx.fillStyle = C.surface; ctx.strokeStyle = C.line; ctx.lineWidth = 1.5 * px;
+  ctx.beginPath(); ctx.arc(-.835, 0, .15, 0, TAU); ctx.fill(); ctx.stroke(); // face cradle
+  ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(-.7, -.42, 1.72, .84, .05); else ctx.rect(-.7, -.42, 1.72, .84); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = C.void; ctx.beginPath(); ctx.ellipse(-.835, 0, .05, .062, 0, 0, TAU); ctx.fill();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, Math.max(180, s * .55)); g.addColorStop(0, hexA(C.lamp, .1)); g.addColorStop(1, hexA(C.lamp, 0));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh);
+}
+function drawNoGo() { // where the gun will not run: one quiet dashed line, no hatching
+  bodyXf(); const px = 1 / s; ctx.strokeStyle = hexA(C.cue, .5); ctx.lineWidth = 1.3 * px; ctx.setLineDash([3 * px, 6 * px]); ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(-.75, 0); ctx.lineTo(-.03, 0);
+  for (const sy of [-1, 1]) { ctx.moveTo(.5, sy * .078 - .05); ctx.lineTo(.5, sy * .078 + .05); }
+  ctx.stroke(); ctx.setLineDash([]); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawContours() {
+  bodyXf(); const px = 1 / s, [lx, ly] = toB(L.x, L.y);
+  const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, .75); g.addColorStop(0, hexA(C.ink, .95)); g.addColorStop(.5, hexA(C.ink, .5)); g.addColorStop(1, hexA(C.ink, .3));
+  ctx.strokeStyle = g; ctx.lineCap = 'round';
+  for (let li = 0; li < LEVELS.length; li++) {
+    const Lv = LEVELS[li]; ctx.beginPath();
+    for (let j = 0; j < GY; j++) {
+      const y = Y0 + j * DY, r0 = j * NX, r1 = r0 + NX;
+      for (let i = 0; i < GX; i++) {
+        const a = Hf[r0 + i], b = Hf[r0 + i + 1], c = Hf[r1 + i + 1], d = Hf[r1 + i];
+        const idx = (a > Lv ? 1 : 0) | (b > Lv ? 2 : 0) | (c > Lv ? 4 : 0) | (d > Lv ? 8 : 0);
+        if (idx === 0 || idx === 15) continue;
+        const x = X0 + i * DX, tx = x + DX * (Lv - a) / (b - a), ry = y + DY * (Lv - b) / (c - b), bx = x + DX * (Lv - d) / (c - d), ly2 = y + DY * (Lv - a) / (d - a), xr = x + DX, yb = y + DY;
+        switch (idx) {
+          case 1: case 14: ctx.moveTo(x, ly2); ctx.lineTo(tx, y); break;
+          case 2: case 13: ctx.moveTo(tx, y); ctx.lineTo(xr, ry); break;
+          case 3: case 12: ctx.moveTo(x, ly2); ctx.lineTo(xr, ry); break;
+          case 4: case 11: ctx.moveTo(xr, ry); ctx.lineTo(bx, yb); break;
+          case 6: case 9: ctx.moveTo(tx, y); ctx.lineTo(bx, yb); break;
+          case 7: case 8: ctx.moveTo(x, ly2); ctx.lineTo(bx, yb); break;
+          case 5: ctx.moveTo(x, ly2); ctx.lineTo(tx, y); ctx.moveTo(xr, ry); ctx.lineTo(bx, yb); break;
+          case 10: ctx.moveTo(tx, y); ctx.lineTo(xr, ry); ctx.moveTo(x, ly2); ctx.lineTo(bx, yb); break;
+        }
+      }
+    }
+    ctx.globalAlpha = li === 0 ? .8 : .2 + .22 * (li / LEVELS.length); ctx.lineWidth = (li === 0 ? 1.5 : 1) * px; ctx.stroke();
+  }
+  ctx.globalAlpha = 1; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function drawHand() {
+  if (!P.inside || S.screen === 'end') return;
+  const x = P.x, y = P.y; ctx.lineCap = 'round';
+  if (G && (G.kind === 'moles' || G.kind === 'flip') && !G.over) {
+    const st = G.tuned >= 0 ? SETS[G.tuned] : null, col = G.cut ? C.danger : st ? st.col : C.cue, capped = st ? Math.max(0, st.level - S.ceiling) : 0;
+    const beat = P.down && !G.cut && !still ? 2.5 * Math.sin(S.t * (st ? st.f : 16) * 1.3) : 0, r = 21 + beat;
+    ctx.strokeStyle = col; ctx.lineWidth = st ? 2.5 : 1.5; if (G.cut) ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, P.down && !G.cut ? 5 : 2.5, 0, TAU); ctx.fill();
+    const label = G.cut ? `cut out · ${G.cut}` : st ? `${st.hz} · ${st.id}${capped ? ` · capped at ${S.ceiling}` : ''}` : 'idle';
+    ctx.font = `500 12px ${MONO}`; ctx.textBaseline = 'middle'; const w = ctx.measureText(label).width, right = x + 34 + w < W - 8; ctx.textAlign = right ? 'left' : 'right';
+    ctx.fillStyle = hexA(C.void, .82); ctx.fillRect(right ? x + 28 : x - 34 - w, y - 11, w + 12, 22); ctx.fillStyle = col; ctx.fillText(label, right ? x + 34 : x - 28, y + .5);
+  } else {
+    ctx.strokeStyle = C.cue; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, P.down ? 13 : 17, 0, TAU); ctx.stroke();
+    if (P.down) { ctx.fillStyle = hexA(C.cue, .22); ctx.fill(); }
+  }
+}
+function drawFloaters() {
+  ctx.font = `500 12px ${MONO}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const f of floaters) {
+    const [x0, y0] = toS(f.x, f.y), k = f.t / 1.5, a = k < .1 ? k / .1 : clamp(1 - (k - .55) / .45, 0, 1), y = y0 - 34 - (still ? 0 : 22 * (1 - Math.pow(1 - k, 3)));
+    const w = ctx.measureText(f.text).width, x = clamp(x0, w / 2 + 12, W - w / 2 - 12);
+    ctx.globalAlpha = a; ctx.fillStyle = hexA(C.void, .82); ctx.fillRect(x - w / 2 - 7, y - 11, w + 14, 22); ctx.fillStyle = f.col; ctx.fillText(f.text, x, y + .5);
+  }
+  ctx.globalAlpha = 1;
+}
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = C.void; ctx.fillRect(0, 0, W, Hh);
+  field(); drawTable(); drawRelief();
+  const gun = S.screen === 'table' || (G && (G.kind === 'moles' || G.kind === 'call' || G.kind === 'flip')); if (gun) drawNoGo();
+  drawContours();
+  if (S.stopped) return; // lights out
+  if (S.screen === 'lobby') drawLobby();
+  else if (S.screen === 'table') for (const c of T.cues) drawCue(c);
+  else if (G) {
+    if (G.kind === 'moles' || G.kind === 'flip') for (const c of G.cues) drawCue(c);
+    if (G.kind === 'hogs') for (const h of G.hogs) drawHog(h);
+    if (G.kind === 'golf') drawGolf();
+    if (G.kind === 'call' && !G.over) drawCall();
+  }
+  drawHand(); drawFloaters();
+}
+const hud = {};
+function setText(id, t) { if (hud[id] !== t) { hud[id] = t; $(id).textContent = t; } }
+function drawHud() {
+  const call = S.screen === 'call' || (S.screen === 'end' && S.last === 'call'), table = S.screen === 'table', live = !!(G && G.kind === 'flip' && G.live), nocam = call || table || live, settle = 1 - S.read, small = W <= 760;
+  if (hud.nocam !== nocam) { hud.nocam = nocam; document.body.classList.toggle('nocam', nocam); }
+  setText('#who', table ? 'You are on the table' : live ? (small ? 'On a second screen' : 'Receiver · calling it from the table') : call ? (small ? 'No camera here' : 'Receiver · no camera reaches this page') : small ? `Inferred · ${pad(S.conf * 100, 3)}%` : `Receiver · inferred · ${pad(S.conf * 100, 3)}% sure`);
+  const word = table ? 'your call' : live ? 'their call' : call ? 'watch the breath' : wordFor(settle);
+  if (hud.word !== word) { hud.word = word; $('#word').textContent = word; }
+  const w = Math.round(50 + 100 * (nocam ? .5 : settle)); if (hud.w !== w) { hud.w = w; $('#word').style.setProperty('--w', w); }
+  if (nocam) return;
+  setText('#breath', `${pad(lerp(19, 7, settle), 2)} / min`);
+  const lean = SETS[S.lean].id; if (hud.lean !== lean) { hud.lean = lean; $('#leans').innerHTML = `${glyphSvg(SETS[S.lean])}<span style="color:${SETS[S.lean].col}">${lean}</span>`; }
+  const pct = pad(settle * 100, 3) + '%'; if (hud.pct !== pct) { hud.pct = pct; $('#pct').textContent = pct; $('#meter').firstElementChild.style.width = (settle * 100).toFixed(1) + '%'; $('#meter').setAttribute('aria-valuenow', Math.round(settle * 100)); }
+}
+let lastT = 0;
+function frame(now) {
+  const dt = Math.min(.05, (now - lastT) / 1000 || 0); lastT = now;
+  update(dt); draw(); drawHud(); requestAnimationFrame(frame);
+}
+
+/* ---------- boot, and keep the receiver across a republish ---------- */
+function boot(data) {
+  if (data && typeof data.tension === 'number') { S.tension = S.read = clamp(data.tension, 0, 1); if (data.ceiling) { S.ceiling = clamp(data.ceiling, 1, 4); setCeil(0); } }
+  layout(); L.x = cx; L.y = cy; pickLean();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+  requestAnimationFrame(t => { lastT = t; frame(t); });
+}
+const hot = window.claude && window.claude.hot;
+if (hot && hot.snapshot) hot.snapshot(() => ({ tension: S.tension, ceiling: S.ceiling }));
+if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
+})();
+</script>
+</body>
+</html>
