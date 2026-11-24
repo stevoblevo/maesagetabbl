@@ -12,6 +12,8 @@ go run ./cmd/tabble
 
 Open `http://<this machine>:8787` on two screens on the same network. On the phone that goes under the face cradle, choose **On the table**. On the other screen, choose **05 Flip**. The person on the table picks a setting and touches where they want it; the spot lights on the player's screen. Stop and the ceiling belong to the table's screen.
 
+A third screen can watch: open `http://<this machine>:8787/#watch` on a TV. It follows whoever is playing and shows the receiver's state large. `#table` opens straight onto the table's screen.
+
 One screen works too: stops 01 to 04 need nothing else.
 
 | Stop | Game | Teaches | How |
@@ -29,6 +31,7 @@ One screen works too: stops 01 to 04 need nothing else.
 - The gun cuts out over the spine, neck, head and the backs of the knees.
 - The receiver's ceiling caps the gun. Stop is latched, and a stop from the table's screen is lifted only there.
 - State is inferred and labelled inferred. Where there is no camera, the page says so.
+- The state is also the weather over the back: red rain when braced, peach fall, mint clearing, night garden when they are a puddle. The accent follows it and a chip names it.
 
 ## Layout
 

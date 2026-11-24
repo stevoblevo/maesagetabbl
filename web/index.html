@@ -82,6 +82,15 @@ button.tool:hover { border-color: var(--ink-muted); }
 .cell .v svg { width: 14px; height: 14px; }
 .meter { width: clamp(90px, 14vw, 180px); height: 4px; background: var(--line); border-radius: 999px; overflow: hidden; }
 body.nocam #slot .cell { display: none; }
+#title em, .meter i, .primary { transition: color var(--dur-slow), background-color var(--dur-slow), width var(--dur-base) var(--ease-out), box-shadow var(--dur-fast); }
+#trace { width: 96px; height: 26px; flex: none; }
+body.watching { --slotH: 116px; }
+body.watching #tools > :not(#leave):not(#full), body.watching #stop { display: none; }
+body.watching #word { font-size: 60px; line-height: 64px; }
+body.watching #trace { width: 220px; height: 44px; }
+body.watching .cell .v { font-size: 16px; }
+body.watching #hint { font-size: 15px; line-height: 21px; max-width: 60ch; }
+@media (max-width: 1040px) { .opt2 { display: none; } }
 .meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width var(--dur-base) var(--ease-out); }
 #stop { flex: none; min-width: 96px; min-height: 56px; padding: 0 22px; border-radius: 10px; border: 1.5px solid var(--ink); background: var(--void); font: 600 15px/20px var(--sans); letter-spacing: .02em; }
 #stop:hover { background: var(--ink); color: var(--void); }
@@ -107,6 +116,7 @@ body.nocam #slot .cell { display: none; }
   .stop .name { font-size: 19px; line-height: 24px; }
   #begin { justify-self: stretch; align-self: stretch; }
   #tools { max-width: none; left: var(--gutter); gap: 6px; }
+  #watch { display: none; }
   .tool { padding: 0 11px; letter-spacing: .05em; }
   .tool.ceil button { width: 32px; }
   .opt { display: none; }
@@ -137,6 +147,8 @@ body.nocam #slot .cell { display: none; }
     <button id="ceilUp" aria-label="Raise the ceiling">+</button>
   </div>
   <button class="tool" id="role">On the table</button>
+  <button class="tool" id="watch">Watch</button>
+  <button class="tool" id="full" hidden>Full screen</button>
   <button class="tool" id="leave" hidden>Leave</button>
 </div>
 
@@ -162,8 +174,9 @@ body.nocam #slot .cell { display: none; }
     <p class="eyebrow" id="who">Receiver · inferred</p>
     <div id="word">caffeinated</div>
   </div>
-  <div class="cell opt"><p class="eyebrow">Breath</p><div class="v" id="breath">19 / min</div></div>
+  <div class="cell opt"><p class="eyebrow">Breath</p><div class="v"><canvas id="trace" width="440" height="88" aria-hidden="true"></canvas><span id="breath">19 / min</span></div></div>
   <div class="cell opt"><p class="eyebrow">Leans</p><div class="v" id="leans">hush</div></div>
+  <div class="cell opt opt2"><p class="eyebrow">Weather</p><div class="v" id="wx">red rain</div></div>
   <div class="cell"><p class="eyebrow">Settled <span id="pct">022%</span></p><div class="meter" role="progressbar" aria-label="Settled" aria-valuemin="0" aria-valuemax="100" id="meter"><i></i></div></div>
   <button id="stop" aria-label="Stop. Lights out and gun off.">Stop</button>
 </footer>
@@ -281,7 +294,8 @@ function noGo(x, y) {
 const S = { screen: 'lobby', run: null, runI: 0, tension: .78, read: .78, conf: .9, breath: 0, lean: 0, leanT: 0, ceiling: 3, stopped: false, results: {}, t: 0, hover: '' };
 let G = null;
 const floaters = [];
-const say = (x, y, text, col) => floaters.push({ x, y, text, col: col || C.ink, t: 0 });
+const flLog = []; let flSeq = 0, pubT = 0;
+const say = (x, y, text, col) => { floaters.push({ x, y, text, col: col || C.ink, t: 0 }); if (ROLE === 'play') { flLog.push([++flSeq, +x.toFixed(3), +y.toFixed(3), text, col || C.ink]); if (flLog.length > 4) flLog.shift(); } };
 function ease(dv) { S.tension = clamp(S.tension + dv, 0, 1); if (Math.abs(dv) > .012) S.conf = Math.min(S.conf, .58); }
 const WORDS = [[.08, 'braced'], [.335, 'caffeinated'], [.595, 'still'], [.67, 'curious'], [.76, 'arriving'], [.93, 'calm'], [2, 'puddle']];
 const wordFor = s => WORDS.find(w => s < w[0])[1];
@@ -336,8 +350,8 @@ function release() {
   P.down = false; motor(false);
   if (G && G.kind === 'golf' && G.aim) strike();
 }
-cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); P.inside = false; moveTo(e.clientX, e.clientY, e.timeStamp); press(); });
-cv.addEventListener('pointermove', e => moveTo(e.clientX, e.clientY, e.timeStamp));
+cv.addEventListener('pointerdown', e => { if (ROLE === 'watch') return; cv.setPointerCapture(e.pointerId); P.inside = false; moveTo(e.clientX, e.clientY, e.timeStamp); press(); });
+cv.addEventListener('pointermove', e => { if (ROLE !== 'watch') moveTo(e.clientX, e.clientY, e.timeStamp); });
 cv.addEventListener('pointerup', e => { release(); if (e.pointerType !== 'mouse') P.inside = false; });
 cv.addEventListener('pointercancel', () => { release(); P.inside = false; });
 cv.addEventListener('pointerleave', e => { if (!P.down && e.pointerType === 'mouse') P.inside = false; });
@@ -346,7 +360,7 @@ const K = {};
 addEventListener('keydown', e => {
   if (e.key === 'Escape') { if (S.screen !== 'lobby' && !S.stopped) stop(); return; }
   const onTable = document.activeElement === cv || document.activeElement === document.body;
-  if (!onTable) return;
+  if (!onTable || ROLE === 'watch') return;
   if (e.key.startsWith('Arrow')) { K[e.key] = true; e.preventDefault(); if (!P.inside) { const [x, y] = toS(-.2, .1); moveTo(x, y, performance.now()); } }
   if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); if (!P.inside) { const [x, y] = toS(-.2, .1); moveTo(x, y, performance.now()); } press(); }
 });
@@ -401,24 +415,25 @@ const HEAD = {
   call: ['Game 04 — Call', 'Real <em>hands</em>.'],
   flip: ['Game 05 — Flip', 'They <em>call</em> it.'],
   table: ['On the table', 'You <em>call</em> it.'],
+  watch: ['Watching', 'The <em>table</em>, live.'],
 };
-let hintNow = '';
+let hintNow = $('#hint').textContent;
 function hint(t) { if (t !== hintNow) { hintNow = t; $('#hint').textContent = t; } }
 let headNow = ['', ''];
 function setHead(k, eyebrow, title) {
   const h = HEAD[k] || HEAD.lobby, e = eyebrow || h[0], t = title || h[1];
   if (e !== headNow[0]) { headNow[0] = e; $('#eyebrow').textContent = e; }
-  if (t !== headNow[1]) { headNow[1] = t; $('#title').innerHTML = t; if (S.screen === 'call') layout(); }
+  if (t !== headNow[1]) { headNow[1] = t; $('#title').innerHTML = t; if (S.screen === 'call' || S.screen === 'watch') layout(); }
 }
 function show(screen) {
   S.screen = screen; const play = screen !== 'lobby';
   document.body.classList.toggle('playing', play);
-  $('#stops').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#role').hidden = play;
+  $('#stops').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#role').hidden = play; $('#watch').hidden = play; $('#full').hidden = screen !== 'watch'; document.body.classList.toggle('watching', screen === 'watch');
   $('#legend').hidden = !(screen === 'moles' || screen === 'flip'); document.body.classList.toggle('calling', screen === 'call');
   if (screen !== 'end') setHead(screen);
   floaters.length = 0; motor(false); layout();
 }
-function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } show('lobby'); hint('Pick a stop on the body, or begin and play all three down the back.'); }
+function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } if (location.hash === '#table' || location.hash === '#watch') location.hash = ''; show('lobby'); hint('Pick a stop on the body, or begin and play all three down the back.'); }
 function start(kind) {
   show(kind); pickLean();
   ({ moles: startMoles, hogs: startHogs, golf: startGolf, call: startCall, flip: startFlip })[kind]();
@@ -479,14 +494,17 @@ function tableSource() {
 const answered = id => localHits.includes(id) || others('play').some(p => Array.isArray(p.presence.hits) && p.presence.hits.includes(id));
 function publish() {
   if (!room) return;
-  const body = ROLE === 'table' ? { role: 'table', cues: T.cues.filter(c => !c.out).map(c => ({ id: c.id, x: +c.x.toFixed(3), y: +c.y.toFixed(3), set: c.set, kind: c.kind })), stopped: T.stopped, ceiling: S.ceiling, hits: null } : { role: 'play', hits: localHits.slice(-12), cues: null, stopped: null, ceiling: null };
+  const body = { role: ROLE, cues: null, stopped: null, ceiling: null, hits: null, view: null };
+  if (ROLE === 'table') { body.cues = T.cues.filter(c => !c.out).map(c => ({ id: c.id, x: +c.x.toFixed(3), y: +c.y.toFixed(3), set: c.set, kind: c.kind })); body.stopped = T.stopped; body.ceiling = S.ceiling; }
+  if (ROLE === 'play') { body.hits = localHits.slice(-12); if (others('watch').length) body.view = buildView(); }
   try { room.presence(body).catch(() => {}); } catch (err) {}
 }
 (async () => {
   try { for (let i = 0; i < 20 && !(window.claude && window.claude.use); i++) await new Promise(ok => setTimeout(ok, 250)); // the room lights up when it can; the page never waits for it
     if (!window.claude || !window.claude.use) return; const r = await window.claude.use('room'); if (!r) return; room = r; r.onPeers(ch => { peers = ch.peers; }, () => { room = null; peers = []; }); publish(); } catch (err) {}
 })();
-function syncRoom() { // a player follows the table's stop and ceiling
+function syncRoom() { // a player follows the table's stop and ceiling; a watcher follows the player's
+  if (ROLE === 'watch') { const v = watchSource(), st = !!(v && v.st === true); if (st && !S.stopped) stop('remote'); else if (!st && S.stopped) resume(); return; }
   if (ROLE !== 'play') return;
   const src = tableSource();
   if (src.remote) {
@@ -494,7 +512,7 @@ function syncRoom() { // a player follows the table's stop and ceiling
     if (src.ceiling && src.ceiling !== S.ceiling) { S.ceiling = src.ceiling; setCeil(0); }
   } else if (S.stopped && S.stopBy === 'remote') { S.stopBy = 'local'; $('#resume').hidden = false; $('#stoppedBack').hidden = false; $('#stoppedNote').textContent = 'Their screen went away. Ask them before you start again.'; }
 }
-function enterTable() { ROLE = 'table'; G = null; S.run = null; show('table'); publish(); cv.focus({ preventScroll: true }); }
+function enterTable() { ROLE = 'table'; G = null; S.run = null; show('table'); if (location.hash !== '#table') location.hash = 'table'; publish(); cv.focus({ preventScroll: true }); }
 $('#role').addEventListener('click', enterTable);
 document.querySelectorAll('.pad[data-set]').forEach(b => {
   const st = SETS[+b.dataset.set]; b.innerHTML = `${glyphSvg(st)}<span>${st.id}</span>`; b.style.setProperty('--pad', st.col);
@@ -520,6 +538,63 @@ function updTable(dt) {
   const n = T.cues.length; T.cues = T.cues.filter(c => c.out < .6); if (changed || n !== T.cues.length) publish();
   const here = others('play').length;
   hint(!room ? 'Pick a setting, then touch where you want it. Hand this screen over, or open the page on a second one.' : here ? `${here} other screen${here > 1 ? 's' : ''} here. Pick a setting, then touch where you want it.` : 'No other screen has this page open yet. What you place waits here.');
+}
+
+/* ---------- a third screen: watch the table ---------- */
+// The player sends a small picture of the game about twelve times a second, only while someone watches.
+// The watcher redraws it with its own code. Words and markup are never taken from the wire, except the hint line, set as text.
+const r3 = v => +(+v).toFixed(3), KINDS = ['real', 'decoy', 'tease'], CUTS = ['', 'spine', 'neck', 'head', 'knee'], GAMES = ['moles', 'hogs', 'golf', 'call', 'flip'], HOG = ['roam', 'ball', 'gone'];
+function buildView() {
+  const v = { sc: S.screen, g: G ? G.kind : null, t: r3(S.tension), ln: S.lean, st: S.stopped, lv: !!(G && G.live), h: hintNow.slice(0, 220), fl: flLog,
+    p: [r3(P.bx), r3(P.by), P.down ? 1 : 0, G && G.tuned >= 0 ? G.tuned : -1, G && G.cut ? CUTS.indexOf(G.cut) : 0, P.inside ? 1 : 0] };
+  if (!G || G.over) return v;
+  if (G.cues) v.cu = G.cues.slice(-8).map(c => [r3(c.z.x), r3(c.z.y), c.z.r, c.set, KINDS.indexOf(c.kind), r3(clamp(c.age / c.inv, 0, 1)), r3(clamp(1 - (c.age - c.inv) / c.win, 0, 1)), r3(Math.min(1, c.fill)), r3(c.out), c.won ? 1 : 0]);
+  if (G.hogs) v.hg = G.hogs.map(h => [r3(h.x), r3(h.y), r3(h.a), r3(h.calm), r3(h.br), HOG.indexOf(h.state), r3(h.spin % TAU), r3(h.wob % TAU)]);
+  if (G.kind === 'golf') { const b = G.ball, a = G.aim; v.gf = [G.h, r3(b.x), r3(b.y), r3(b.sunk), a ? 1 : 0, a ? r3(a.x0) : 0, a ? r3(a.y0) : 0, a ? r3(a.x1) : 0, a ? r3(a.y1) : 0]; }
+  if (G.kind === 'call' && G.z) { const z = G.fromT > 0 ? G.from : G.z; v.ca = [z.x, z.y, z.r, G.set, r3(G.left), G.dur, G.fromT > 0 ? 1 : 0, G.i, G.n]; }
+  return v;
+}
+const num = (x, a, b, d = 0) => { x = +x; return isFinite(x) ? clamp(x, a, b) : d; }, arr = a => Array.isArray(a) ? a : null;
+const flSeen = {}; let flStarted = false, legendOn = null;
+function watchSource() { const p = others('play').filter(q => q.presence.view && typeof q.presence.view === 'object').sort((a, b) => b.updatedAt - a.updatedAt)[0]; return p ? p.presence.view : null; }
+function enterWatch() { ROLE = 'watch'; G = null; S.run = null; show('watch'); if (location.hash !== '#watch') location.hash = 'watch'; publish(); }
+$('#watch').addEventListener('click', enterWatch);
+$('#full').addEventListener('click', () => { try { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); } catch (err) {} });
+function route() { const h = location.hash; if (h === '#watch') { if (ROLE !== 'watch') enterWatch(); } else if (h === '#table') { if (ROLE !== 'table') enterTable(); } else if (ROLE !== 'play') lobby(); }
+addEventListener('hashchange', route);
+function updWatch(dt) {
+  const v = watchSource();
+  if (!v) { G = null; P.inside = false; setHead('watch'); document.body.classList.remove('calling'); hint(room ? 'No one is playing yet. Start a game on another screen and it shows here.' : 'This screen follows another one. Open the page on a second screen and play there.'); return; }
+  S.tension = num(v.t, 0, 1, .78); S.lean = num(v.ln, 0, 3) | 0;
+  const kind = GAMES.includes(v.g) ? v.g : null, p = arr(v.p) || [];
+  P.bx = num(p[0], -1.3, 1.3, 9); P.by = num(p[1], -.7, .7, 9); [P.x, P.y] = toS(P.bx, P.by); P.inside = p[5] === 1; P.down = p[2] === 1;
+  G = null;
+  if (kind && (arr(v.cu) || arr(v.hg) || arr(v.gf) || arr(v.ca))) {
+    G = { kind, over: false, live: v.lv === true, tuned: num(p[3], -1, 3, -1) | 0, cut: CUTS[num(p[4], 0, 4) | 0], cues: [], hogs: [], glide: [], aim: null };
+    for (const c of (arr(v.cu) || []).slice(0, 8)) {
+      if (!arr(c)) continue;
+      const a = num(c[5], 0, 1), left = num(c[6], 0, 1, 1), q = { z: { x: num(c[0], -1, 1), y: num(c[1], -.48, .48), r: num(c[2], .03, .09, .066) }, set: num(c[3], 0, 3) | 0, kind: KINDS[num(c[4], 0, 2) | 0], inv: 1, win: 10, age: a < 1 ? a : 1 + (1 - left) * 10, fill: num(c[7], 0, 1), out: num(c[8], 0, 1), won: c[9] === 1 };
+      G.cues.push(q); if (q.kind !== 'decoy' && !q.out) bumps.push({ x: q.z.x, y: q.z.y, a: .16 * a, r: .15 });
+    }
+    for (const h of (arr(v.hg) || []).slice(0, 8)) if (arr(h)) G.hogs.push({ x: num(h[0], -1.2, 1.2), y: num(h[1], -.6, .6), a: num(h[2], -10, 10), calm: num(h[3], 0, 1), br: num(h[4], 0, 1), state: HOG[num(h[5], 0, 2) | 0], spin: num(h[6], 0, 7), wob: num(h[7], 0, 7) });
+    const gf = arr(v.gf), ca = arr(v.ca);
+    if (kind === 'golf') { if (!gf) G = null; else { G.h = num(gf[0], 0, HOLES.length - 1) | 0; G.ball = { x: num(gf[1], -1, 1), y: num(gf[2], -.48, .48), sunk: num(gf[3], 0, 5) }; if (gf[4] === 1) G.aim = { x0: num(gf[5], -1.3, 1.3), y0: num(gf[6], -.7, .7), x1: num(gf[7], -1.3, 1.3), y1: num(gf[8], -.7, .7) }; } }
+    if (kind === 'call') {
+      if (!ca) G = null;
+      else {
+        const z = { x: num(ca[0], -1, 1), y: num(ca[1], -.48, .48), r: num(ca[2], .03, .09, .066) }; G.z = G.from = z; G.set = num(ca[3], 0, 3) | 0; G.left = num(ca[4], 0, 600); G.dur = num(ca[5], 1, 600, 20); G.fromT = ca[6] === 1 ? 1 : 0;
+        bumps.push({ x: z.x, y: z.y, a: .075, r: .13 });
+        const near = Z.reduce((a, b) => hyp(b.x - z.x, b.y - z.y) < hyp(a.x - z.x, a.y - z.y) ? b : a); // the name comes from this screen's own list
+        setHead('call', `Call ${pad(num(ca[7], 0, 99), 2)} / ${pad(num(ca[8], 0, 99), 2)} · ${pad(G.left, 2)} s`, `${near.side} <em>${near.part}</em>`);
+      }
+    }
+  }
+  if (!G || G.kind !== 'call') setHead(G ? G.kind : 'watch');
+  document.body.classList.toggle('calling', !!G && G.kind === 'call');
+  const lg = !!G && (G.kind === 'moles' || G.kind === 'flip'); if (lg !== legendOn) { legendOn = lg; $('#legend').hidden = !lg; layout(); }
+  hint(typeof v.h === 'string' ? v.h.slice(0, 220) : '');
+  for (const f of (arr(v.fl) || []).slice(-4)) if (arr(f) && !flSeen[f[0]]) { flSeen[f[0]] = 1; if (flStarted) floaters.push({ x: num(f[1], -1, 1), y: num(f[2], -.5, .5), text: String(f[3]).slice(0, 60), col: /^#[0-9a-fA-F]{6}$/.test(f[4]) ? f[4] : C.ink, t: 0 }); }
+  flStarted = true;
 }
 
 /* ---------- 05 flip: they place the spots, you answer ---------- */
@@ -816,6 +891,50 @@ function drawLobby() {
   }
 }
 
+/* ---------- weather: the receiver's state, as the sky over their own back ---------- */
+// Depthfield's four: red rain, peach fall, mint clearing, night garden. The accent follows the weather and a chip names it.
+const WX = [{ id: 'red rain', acc: '#ff6b6b', rgb: [255, 150, 140] }, { id: 'peach fall', acc: '#ffb48a', rgb: [255, 206, 170] }, { id: 'mint clearing', acc: '#5ef2b8', rgb: [190, 255, 228] }, { id: 'night garden', acc: '#c9e6ff', rgb: [201, 226, 255] }];
+const wxMix = [0, 1, 0, 0], lampRGB = [255, 206, 170]; let wxKey = '';
+const noReading = () => S.screen === 'call' || S.screen === 'table' || !!(G && (G.kind === 'call' || G.live));
+const lampA = a => `rgba(${lampRGB[0] | 0},${lampRGB[1] | 0},${lampRGB[2] | 0},${a})`;
+function updWeather(dt) {
+  const settle = 1 - S.read, blind = noReading(), want = blind ? 1 : settle < .335 ? 0 : settle < .76 ? 1 : settle < .93 ? 2 : 3, key = want + (blind ? 'n' : '');
+  if (key !== wxKey) { wxKey = key; C.accent = WX[want].acc; document.documentElement.style.setProperty('--accent', WX[want].acc); setText('#wx', blind ? 'no reading' : WX[want].id); }
+  const k = Math.min(1, dt * 1.3); lampRGB[0] = lampRGB[1] = lampRGB[2] = 0;
+  for (let i = 0; i < 4; i++) { wxMix[i] += ((i === want ? 1 : 0) - wxMix[i]) * k; for (let c = 0; c < 3; c++) lampRGB[c] += wxMix[i] * WX[i].rgb[c]; }
+}
+const h01 = (i, k) => { const x = Math.sin(i * 127.1 + k * 311.7) * 43758.5453; return x - Math.floor(x); };
+function drawWeather() {
+  const t = still ? 0 : S.t, dense = clamp(W * Hh / 1e6, .3, 1.3); let w = wxMix[0]; // fewer on a phone
+  if (w > .02) { // rain, seen from above: drops landing
+    ctx.lineWidth = 1.2;
+    for (let i = 0; i < 42 * dense; i++) { const q = t / (.8 + h01(i, 1) * .7) + h01(i, 2), u = q % 1, n = Math.floor(q) * 7.3 + i; ctx.strokeStyle = hexA(WX[0].acc, .5 * w * (1 - u)); ctx.beginPath(); ctx.arc(h01(n, 3) * W, h01(n, 4) * Hh, 2 + 13 * u, 0, TAU); ctx.stroke(); }
+  }
+  w = wxMix[1];
+  if (w > .02) for (let i = 0; i < 22 * dense; i++) { // petals, with their shadows on the table
+    const sp = 14 + h01(i, 5) * 16, x = ((h01(i, 6) * W + t * sp) % (W + 40)) - 20, y = ((h01(i, 7) * Hh + t * sp * .55 + Math.sin(t * .7 + i) * 10) % (Hh + 40)) - 20, a = t * (.4 + h01(i, 8)) + i, r = 3 + h01(i, 9) * 3;
+    ctx.fillStyle = `rgba(0,0,0,${.16 * w})`; ctx.beginPath(); ctx.ellipse(x + 5, y + 8, r * 1.5, r * .7, a, 0, TAU); ctx.fill();
+    ctx.fillStyle = hexA(WX[1].acc, .5 * w); ctx.beginPath(); ctx.ellipse(x, y, r * 1.5, r * .7 * (.5 + .5 * Math.abs(Math.cos(a * 1.3))), a, 0, TAU); ctx.fill();
+  }
+  w = wxMix[2];
+  if (w > .02) for (let i = 0; i < 34 * dense; i++) { // motes rising in clear air
+    const x = (h01(i, 10) * W + Math.sin(t * .3 + i * 1.7) * 26 + W) % W, y = ((h01(i, 11) * Hh - t * (5 + h01(i, 12) * 9)) % Hh + Hh) % Hh, tw = .5 + .5 * Math.sin(t * (1 + h01(i, 13) * 2) + i);
+    ctx.fillStyle = hexA(WX[2].acc, .6 * w * tw); ctx.beginPath(); ctx.arc(x, y, 1 + h01(i, 14) * 1.6, 0, TAU); ctx.fill();
+  }
+  w = wxMix[3];
+  if (w > .02) for (let i = 0; i < 24 * dense; i++) { // fireflies
+    const x = h01(i, 15) * W + Math.sin(t * .23 + i * 2.1) * 60, y = h01(i, 16) * Hh + Math.cos(t * .19 + i * 1.3) * 44, b = Math.max(0, Math.sin(t * (.6 + h01(i, 17)) + i * 3));
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 9); g.addColorStop(0, hexA(WX[3].acc, .75 * w * b)); g.addColorStop(1, hexA(WX[3].acc, 0)); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 9, 0, TAU); ctx.fill();
+  }
+}
+const trace = $('#trace'), tctx = trace.getContext('2d'), breathLog = new Float32Array(160); let logI = 0, logT = 0;
+function drawTrace() { // live data: the last eight seconds of breath
+  const w = trace.width, h = trace.height, y = v => h / 2 - v * (h / 2 - 8);
+  tctx.clearRect(0, 0, w, h); tctx.strokeStyle = C.muted; tctx.lineWidth = 3; tctx.lineJoin = 'round'; tctx.beginPath();
+  for (let i = 0; i < 160; i++) { const x = i / 159 * (w - 12); i ? tctx.lineTo(x, y(breathLog[(logI + i) % 160])) : tctx.moveTo(x, y(breathLog[logI % 160])); }
+  tctx.stroke(); tctx.fillStyle = C.accent; tctx.beginPath(); tctx.arc(w - 12, y(breathLog[(logI + 159) % 160]), 7, 0, TAU); tctx.fill();
+}
+
 /* ---------- frame ---------- */
 function update(dt) {
   S.t += dt;
@@ -824,11 +943,14 @@ function update(dt) {
   if (kx || ky) moveTo(clamp(P.x + kx * 230 * dt, 0, W), clamp(P.y + ky * 230 * dt, 0, Hh), performance.now());
   const tx = P.inside ? P.x : cx, ty = P.inside ? P.y : cy; L.x += (tx - L.x) * Math.min(1, dt * 5); L.y += (ty - L.y) * Math.min(1, dt * 5);
   bumps.length = 0; syncRoom();
-  const playing = G && !G.over && !S.stopped && G.kind !== 'call' && !G.live;
+  if (ROLE === 'play' && room) { pubT -= dt; if (pubT <= 0) { pubT = .085; if (others('watch').length) publish(); } }
+  const playing = G && !G.over && !S.stopped && G.kind !== 'call' && !G.live && S.screen !== 'watch';
   if (playing) { ease(.0035 * dt); S.leanT -= dt; if (S.leanT <= 0) pickLean(); }
   S.read += (S.tension - S.read) * Math.min(1, dt / 1.1); S.conf += (.92 - S.conf) * Math.min(1, dt / 2.5);
-  S.breath += dt * lerp(19, 7, 1 - S.read) / 60 * TAU;
+  S.breath += dt * lerp(19, 7, 1 - S.read) / 60 * TAU; updWeather(dt);
+  logT += dt; while (logT > .05) { logT -= .05; breathLog[logI++ % 160] = still ? 0 : Math.sin(S.breath) * (.45 + .5 * (1 - S.read)); }
   if (S.stopped) return;
+  if (S.screen === 'watch') { updWatch(dt); for (const f of floaters) f.t += dt; for (let i = floaters.length - 1; i >= 0; i--) if (floaters[i].t > 1.5) floaters.splice(i, 1); return; }
   if (S.screen === 'table') updTable(dt);
   if (S.screen === 'lobby') { const [bx, by] = pathAt((S.t / 7) % 1); bumps.push({ x: bx, y: by, a: .12, r: .13 }); }
   if (G && G.over) { G.after -= dt; if (G.after <= 0 && S.screen !== 'end') advance(); }
@@ -851,7 +973,7 @@ function field() {
 }
 function bodyXf() { tall ? ctx.setTransform(0, s * dpr, -s * dpr, 0, cx * dpr, cy * dpr) : ctx.setTransform(s * dpr, 0, 0, s * dpr, cx * dpr, cy * dpr); }
 function drawRelief() { // a reflective surface: lit by the lamp, dark away from it
-  const [lx, ly] = toB(L.x, L.y), lz = .42, zs = .2;
+  const [lx, ly] = toB(L.x, L.y), lz = .42, zs = .2, lr = lampRGB[0], lg = lampRGB[1], lb = lampRGB[2];
   for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
     const k = j * NX + i, h = Hf[k], o = k * 4 + 3;
     if (h < .004) { relief[o] = 0; continue; }
@@ -859,7 +981,7 @@ function drawRelief() { // a reflective surface: lit by the lamp, dark away from
     const dx = lx - (X0 + i * DX), dy = ly - (Y0 + j * DY), dz = lz - h * zs, dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
     let d = (dz - gx * dx - gy * dy) / (dl * Math.sqrt(gx * gx + gy * gy + 1)); if (d < 0) d = 0;
     const a = (h < .06 ? h / .06 : 1) * (.075 + .5 * d / (1 + dl * dl * 1.8) + .1 * h);
-    relief[o] = a > .7 ? 178 : a * 255;
+    relief[o - 3] = lr; relief[o - 2] = lg; relief[o - 1] = lb; relief[o] = a > .7 ? 178 : a * 255;
   }
   reliefCtx.putImageData(reliefImg, 0, 0);
   bodyXf(); ctx.imageSmoothingEnabled = true; ctx.drawImage(reliefCv, X0 - DX / 2, Y0 - DY / 2, NX * DX, (GY + 1) * DY); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -871,7 +993,7 @@ function drawTable() {
   ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(-.7, -.42, 1.72, .84, .05); else ctx.rect(-.7, -.42, 1.72, .84); ctx.fill(); ctx.stroke();
   ctx.fillStyle = C.void; ctx.beginPath(); ctx.ellipse(-.835, 0, .05, .062, 0, 0, TAU); ctx.fill();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, Math.max(180, s * .55)); g.addColorStop(0, hexA(C.lamp, .1)); g.addColorStop(1, hexA(C.lamp, 0));
+  const g = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, Math.max(180, s * .55)); g.addColorStop(0, lampA(.1)); g.addColorStop(1, lampA(0));
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, Hh);
 }
 function drawNoGo() { // where the gun will not run: one quiet dashed line, no hatching
@@ -939,9 +1061,9 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = C.void; ctx.fillRect(0, 0, W, Hh);
   field(); drawTable(); drawRelief();
   const gun = S.screen === 'table' || (G && (G.kind === 'moles' || G.kind === 'call' || G.kind === 'flip')); if (gun) drawNoGo();
-  drawContours();
+  drawContours(); drawWeather();
   if (S.stopped) return; // lights out
-  if (S.screen === 'lobby') drawLobby();
+  if (S.screen === 'lobby' || (S.screen === 'watch' && !G)) drawLobby();
   else if (S.screen === 'table') for (const c of T.cues) drawCue(c);
   else if (G) {
     if (G.kind === 'moles' || G.kind === 'flip') for (const c of G.cues) drawCue(c);
@@ -954,14 +1076,14 @@ function draw() {
 const hud = {};
 function setText(id, t) { if (hud[id] !== t) { hud[id] = t; $(id).textContent = t; } }
 function drawHud() {
-  const call = S.screen === 'call' || (S.screen === 'end' && S.last === 'call'), table = S.screen === 'table', live = !!(G && G.kind === 'flip' && G.live), nocam = call || table || live, settle = 1 - S.read, small = W <= 760;
+  const call = S.screen === 'call' || (S.screen === 'watch' && !!G && G.kind === 'call') || (S.screen === 'end' && S.last === 'call'), table = S.screen === 'table', live = !!(G && G.kind === 'flip' && G.live), nocam = call || table || live, settle = 1 - S.read, small = W <= 760;
   if (hud.nocam !== nocam) { hud.nocam = nocam; document.body.classList.toggle('nocam', nocam); }
   setText('#who', table ? 'You are on the table' : live ? (small ? 'On a second screen' : 'Receiver · calling it from the table') : call ? (small ? 'No camera here' : 'Receiver · no camera reaches this page') : small ? `Inferred · ${pad(S.conf * 100, 3)}%` : `Receiver · inferred · ${pad(S.conf * 100, 3)}% sure`);
   const word = table ? 'your call' : live ? 'their call' : call ? 'watch the breath' : wordFor(settle);
   if (hud.word !== word) { hud.word = word; $('#word').textContent = word; }
   const w = Math.round(50 + 100 * (nocam ? .5 : settle)); if (hud.w !== w) { hud.w = w; $('#word').style.setProperty('--w', w); }
   if (nocam) return;
-  setText('#breath', `${pad(lerp(19, 7, settle), 2)} / min`);
+  drawTrace(); setText('#breath', `${pad(lerp(19, 7, settle), 2)} / min`);
   const lean = SETS[S.lean].id; if (hud.lean !== lean) { hud.lean = lean; $('#leans').innerHTML = `${glyphSvg(SETS[S.lean])}<span style="color:${SETS[S.lean].col}">${lean}</span>`; }
   const pct = pad(settle * 100, 3) + '%'; if (hud.pct !== pct) { hud.pct = pct; $('#pct').textContent = pct; $('#meter').firstElementChild.style.width = (settle * 100).toFixed(1) + '%'; $('#meter').setAttribute('aria-valuenow', Math.round(settle * 100)); }
 }
@@ -974,7 +1096,7 @@ function frame(now) {
 /* ---------- boot, and keep the receiver across a republish ---------- */
 function boot(data) {
   if (data && typeof data.tension === 'number') { S.tension = S.read = clamp(data.tension, 0, 1); if (data.ceiling) { S.ceiling = clamp(data.ceiling, 1, 4); setCeil(0); } }
-  layout(); L.x = cx; L.y = cy; pickLean();
+  layout(); L.x = cx; L.y = cy; pickLean(); route();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
   requestAnimationFrame(t => { lastT = t; frame(t); });
 }

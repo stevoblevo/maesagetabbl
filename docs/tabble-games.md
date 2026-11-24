@@ -16,7 +16,21 @@ Inferred, labelled inferred, with a confidence figure that dips after every even
 
 In this build the state is a rehearsal. A page inside claude.ai cannot reach a camera, and Call and Flip say so on screen.
 
-## Flip and the two screens
+## Weather
+The state is drawn a second way, so nobody has to read the slot: as weather over the receiver's own back, in Depthfield's four.
+
+| Settled | Weather | What falls |
+|---|---|---|
+| under 34% | red rain | drops landing, seen from above |
+| 34–76% | peach fall | petals with shadows on the table |
+| 76–93% | mint clearing | motes rising |
+| 93% and up | night garden | fireflies |
+
+The lamp that lights the back takes the weather's colour, the page's one accent follows it, and a chip in the slot names it. With no reading (Call, Flip with a real person, the table's own screen) it stays peach and the chip says "no reading".
+
+The slot also draws the last eight seconds of breath as a trace.
+
+## Flip and the screens
 The person on the table opens the page on a phone and chooses On the table. They pick a setting and touch where they want it; "Trick" places a spot that is lit and flat. Their screen owns Stop and the ceiling.
 
 The wire is presence only, sent whole every time:
@@ -29,6 +43,8 @@ The wire is presence only, sent whole every time:
 Everything read from another screen is clamped and re-checked: a spot off the body or on a no-go zone is dropped. Inside claude.ai the carrier is the platform's room; on your own network it is `cmd/tabble`.
 
 With nobody on the table, a rehearsal asks instead and keeps asking near two sore spots.
+
+A third role, `watch`, is for a TV (`#watch`). While someone watches, the player also publishes `view`: a small picture of the game about twelve times a second (screen, game, tension, the hand, spots, hedgehogs, ball, the current call, the last four floating words). The watcher redraws it with its own code. Names and markup are never taken from the wire; the hint line is set as text. A stop on the player's screen shows on the watcher.
 
 ## Open tuning questions
 - Moles window is 3.2 s falling to 2.1 s. Study 03 used 800 ms invitation and 1200 ms response; too tight for a mouse, maybe right for a real gun.
