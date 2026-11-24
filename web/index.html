@@ -612,9 +612,9 @@ function updWatch(dt) {
 // hands it back through the room, so every screen reads the same person. Inside claude.ai a page is
 // not given the motion sensor and the room has no feel(), so this screen says so and does nothing.
 const canFeel = () => 'DeviceMotionEvent' in window && window.isSecureContext !== false && !!room && typeof room.feel === 'function';
-let feeling = false, batch = [], flushT = 0, flushIn = 0, lastMotion = 0, wake = null, senseNote = '';
+let feeling = false, freshFeel = false, batch = [], flushT = 0, flushIn = 0, lastMotion = 0, wake = null, senseNote = '';
 const seenKey = {}, seenAt = {};
-function noteReadings() { for (const p of peers) { const r = p.presence && p.presence.reading, k = r ? `${r.seconds}:${r.wave}:${r.bpm}` : ''; if (k !== seenKey[p.peer]) { seenKey[p.peer] = k; seenAt[p.peer] = Date.now(); } } }
+function noteReadings() { for (const p of peers) { const r = p.presence && p.presence.reading, k = r ? `${r.seconds}:${r.wave}:${r.bpm}` : ''; if (k !== seenKey[p.peer]) { seenKey[p.peer] = k; seenAt[p.peer] = Date.now() - (r ? num(r.age, 0, 60000) : 0); } } } // age: how old the server says the reading already was
 function reading(own) { // the freshest reading in the room, checked like everything else from another screen
   let best = null;
   for (const p of peers) {
@@ -630,7 +630,7 @@ async function startFeeling() {
   if (!canFeel()) return;
   try { if (typeof DeviceMotionEvent.requestPermission === 'function' && await DeviceMotionEvent.requestPermission() !== 'granted') { senseNote = 'Motion was not allowed. Allow it for this page, then start again.'; return; } }
   catch (err) { senseNote = 'The browser would not ask for motion. Reload the page, then start again.'; return; }
-  senseNote = ''; batch = []; flushT = lastMotion = performance.now(); addEventListener('devicemotion', onMotion); feeling = true; $('#feel').textContent = 'Stop feeling'; publish();
+  senseNote = ''; batch = []; flushT = lastMotion = performance.now(); addEventListener('devicemotion', onMotion); feeling = freshFeel = true; $('#feel').textContent = 'Stop feeling'; publish();
   try { wake = await navigator.wakeLock.request('screen'); } catch (err) { wake = null; } // a sleeping phone stops feeling
 }
 function stopFeeling() { removeEventListener('devicemotion', onMotion); feeling = false; batch = []; try { if (wake) wake.release(); } catch (err) {} wake = null; $('#feel').textContent = 'Start feeling'; publish(); }
@@ -639,7 +639,7 @@ function enterSense() { ROLE = 'sense'; G = null; S.run = null; show('sense'); i
 $('#sense').addEventListener('click', enterSense);
 function updSense(dt) {
   $('#feel').disabled = !canFeel();
-  if (feeling) { flushIn -= dt; if (flushIn <= 0) { flushIn = .2; const now = performance.now(); if (batch.length) { room.feel(now - flushT, batch); batch = []; } flushT = now; } }
+  if (feeling) { flushIn -= dt; if (flushIn <= 0) { flushIn = .2; const now = performance.now(); if (batch.length) { room.feel(now - flushT, batch, freshFeel); freshFeel = false; batch = []; } flushT = now; } }
   const r = reading(true);
   hint(senseNote ? senseNote
     : !room || typeof room.feel !== 'function' ? 'Nothing here can turn motion into breath. That takes the Tabble server: run it, then open its https address on this phone.'
