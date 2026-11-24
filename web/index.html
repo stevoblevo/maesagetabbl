@@ -60,6 +60,9 @@ button.tool:hover { border-color: var(--ink-muted); }
 .tool.ceil span { padding: 0 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 #stops { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) auto; gap: 10px; align-items: stretch; }
+#senseBar { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: flex; }
+#senseBar .primary { min-height: 60px; flex: 1; font-size: 17px; }
+.primary:disabled { opacity: .6; cursor: default; box-shadow: none; }
 #pads { position: fixed; left: var(--gutter); right: var(--gutter); bottom: calc(var(--slotH) + 14px); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
 .pad { min-height: 60px; padding: 6px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: var(--chrome); border: 1.5px solid var(--line); border-radius: 10px; font: 500 12px/16px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); backdrop-filter: blur(10px); }
 .pad svg { width: 20px; height: 20px; }
@@ -148,6 +151,7 @@ body.watching #hint { font-size: 15px; line-height: 21px; max-width: 60ch; }
   </div>
   <button class="tool" id="role">On the table</button>
   <button class="tool" id="watch">Watch</button>
+  <button class="tool" id="sense" hidden>Feel breath</button>
   <button class="tool" id="full" hidden>Full screen</button>
   <button class="tool" id="leave" hidden>Leave</button>
 </div>
@@ -167,6 +171,10 @@ body.watching #hint { font-size: 15px; line-height: 21px; max-width: 60ch; }
   <button class="pad" data-set="2" aria-pressed="false"></button>
   <button class="pad" data-set="3" aria-pressed="false"></button>
   <button class="pad" id="trick" aria-pressed="false">Trick off</button>
+</nav>
+
+<nav id="senseBar" hidden aria-label="This phone as a sensor">
+  <button class="primary" id="feel">Start feeling</button>
 </nav>
 
 <footer id="slot" aria-label="The receiver's screen">
@@ -296,7 +304,7 @@ let G = null;
 const floaters = [];
 const flLog = []; let flSeq = 0, pubT = 0;
 const say = (x, y, text, col) => { floaters.push({ x, y, text, col: col || C.ink, t: 0 }); if (ROLE === 'play') { flLog.push([++flSeq, +x.toFixed(3), +y.toFixed(3), text, col || C.ink]); if (flLog.length > 4) flLog.shift(); } };
-function ease(dv) { S.tension = clamp(S.tension + dv, 0, 1); if (Math.abs(dv) > .012) S.conf = Math.min(S.conf, .58); }
+function ease(dv) { if (S.sensed) return; S.tension = clamp(S.tension + dv, 0, 1); if (Math.abs(dv) > .012) S.conf = Math.min(S.conf, .58); }
 const WORDS = [[.08, 'braced'], [.335, 'caffeinated'], [.595, 'still'], [.67, 'curious'], [.76, 'arriving'], [.93, 'calm'], [2, 'puddle']];
 const wordFor = s => WORDS.find(w => s < w[0])[1];
 function pickLean() {
@@ -315,7 +323,7 @@ function layout() {
   tall = Hh > W * 1.05;
   const small = W <= 760, toolsB = $('#tools').getBoundingClientRect().bottom;
   $('#head').style.top = small ? (toolsB + 10) + 'px' : '';
-  const head = $('#head').getBoundingClientRect(), slot = $('#slot').offsetHeight, bar = !$('#stops').hidden ? $('#stops') : !$('#pads').hidden ? $('#pads') : null;
+  const head = $('#head').getBoundingClientRect(), slot = $('#slot').offsetHeight, bar = [$('#stops'), $('#pads'), $('#senseBar')].find(b => !b.hidden) || null;
   const stopsH = bar ? bar.offsetHeight + 14 : 0;
   const top = head.bottom + 10, bot = Hh - slot - stopsH - 14;
   if (tall) { s = Math.min(W * .96 / .98, (bot - top) / 2.02); cx = W / 2; cy = (top + bot) / 2 - .015 * s; }
@@ -340,6 +348,7 @@ function moveTo(px, py, now) {
 function press() {
   if (S.stopped) return; P.down = true; audioWake();
   if (S.screen === 'table') { placeCue(); return; }
+  if (S.screen === 'sense') return;
   if (S.screen === 'lobby') { const st = STOPS.find(q => hyp(P.bx - q.x, P.by - q.y) < .1); if (st) { S.run = null; start(st.g); } return; }
   if (!G || G.over) return;
   if (G.kind === 'call') { nextCall(); return; }
@@ -416,6 +425,7 @@ const HEAD = {
   flip: ['Game 05 — Flip', 'They <em>call</em> it.'],
   table: ['On the table', 'You <em>call</em> it.'],
   watch: ['Watching', 'The <em>table</em>, live.'],
+  sense: ['On their back', 'Lay me <em>down</em>.'],
 };
 let hintNow = $('#hint').textContent;
 function hint(t) { if (t !== hintNow) { hintNow = t; $('#hint').textContent = t; } }
@@ -428,12 +438,12 @@ function setHead(k, eyebrow, title) {
 function show(screen) {
   S.screen = screen; const play = screen !== 'lobby';
   document.body.classList.toggle('playing', play);
-  $('#stops').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#role').hidden = play; $('#watch').hidden = play; $('#full').hidden = screen !== 'watch'; document.body.classList.toggle('watching', screen === 'watch');
+  $('#stops').hidden = play; $('#leave').hidden = !play; $('#card').hidden = true; $('#pads').hidden = screen !== 'table'; $('#role').hidden = play; $('#watch').hidden = play; $('#full').hidden = screen !== 'watch'; $('#senseBar').hidden = screen !== 'sense'; $('#sense').hidden = play || !canFeel(); document.body.classList.toggle('watching', screen === 'watch');
   $('#legend').hidden = !(screen === 'moles' || screen === 'flip'); document.body.classList.toggle('calling', screen === 'call');
   if (screen !== 'end') setHead(screen);
   floaters.length = 0; motor(false); layout();
 }
-function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } if (location.hash === '#table' || location.hash === '#watch') location.hash = ''; show('lobby'); hint('Pick a stop on the body, or begin and play all three down the back.'); }
+function lobby() { G = null; S.run = null; if (ROLE !== 'play') { ROLE = 'play'; publish(); } if (feeling) stopFeeling(); if (['#table', '#watch', '#sense'].includes(location.hash)) location.hash = ''; show('lobby'); hint('Pick a stop on the body, or begin and play all three down the back.'); }
 function start(kind) {
   show(kind); pickLean();
   ({ moles: startMoles, hogs: startHogs, golf: startGolf, call: startCall, flip: startFlip })[kind]();
@@ -494,14 +504,14 @@ function tableSource() {
 const answered = id => localHits.includes(id) || others('play').some(p => Array.isArray(p.presence.hits) && p.presence.hits.includes(id));
 function publish() {
   if (!room) return;
-  const body = { role: ROLE, cues: null, stopped: null, ceiling: null, hits: null, view: null };
+  const body = { role: ROLE, cues: null, stopped: null, ceiling: null, hits: null, view: null, on: ROLE === 'sense' ? feeling : null };
   if (ROLE === 'table') { body.cues = T.cues.filter(c => !c.out).map(c => ({ id: c.id, x: +c.x.toFixed(3), y: +c.y.toFixed(3), set: c.set, kind: c.kind })); body.stopped = T.stopped; body.ceiling = S.ceiling; }
   if (ROLE === 'play') { body.hits = localHits.slice(-12); if (others('watch').length) body.view = buildView(); }
   try { room.presence(body).catch(() => {}); } catch (err) {}
 }
 (async () => {
   try { for (let i = 0; i < 20 && !(window.claude && window.claude.use); i++) await new Promise(ok => setTimeout(ok, 250)); // the room lights up when it can; the page never waits for it
-    if (!window.claude || !window.claude.use) return; const r = await window.claude.use('room'); if (!r) return; room = r; r.onPeers(ch => { peers = ch.peers; }, () => { room = null; peers = []; }); publish(); } catch (err) {}
+    if (!window.claude || !window.claude.use) return; const r = await window.claude.use('room'); if (!r) return; room = r; r.onPeers(ch => { peers = ch.peers; noteReadings(); }, () => { room = null; peers = []; }); publish(); if (S.screen === 'lobby') $('#sense').hidden = !canFeel(); } catch (err) {}
 })();
 function syncRoom() { // a player follows the table's stop and ceiling; a watcher follows the player's
   if (ROLE === 'watch') { const v = watchSource(), st = !!(v && v.st === true); if (st && !S.stopped) stop('remote'); else if (!st && S.stopped) resume(); return; }
@@ -560,7 +570,7 @@ function watchSource() { const p = others('play').filter(q => q.presence.view &&
 function enterWatch() { ROLE = 'watch'; G = null; S.run = null; show('watch'); if (location.hash !== '#watch') location.hash = 'watch'; publish(); }
 $('#watch').addEventListener('click', enterWatch);
 $('#full').addEventListener('click', () => { try { (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {}); } catch (err) {} });
-function route() { const h = location.hash; if (h === '#watch') { if (ROLE !== 'watch') enterWatch(); } else if (h === '#table') { if (ROLE !== 'table') enterTable(); } else if (ROLE !== 'play') lobby(); }
+function route() { const h = location.hash; if (h === '#watch') { if (ROLE !== 'watch') enterWatch(); } else if (h === '#table') { if (ROLE !== 'table') enterTable(); } else if (h === '#sense') { if (ROLE !== 'sense') enterSense(); } else if (ROLE !== 'play') lobby(); }
 addEventListener('hashchange', route);
 function updWatch(dt) {
   const v = watchSource();
@@ -595,6 +605,55 @@ function updWatch(dt) {
   hint(typeof v.h === 'string' ? v.h.slice(0, 220) : '');
   for (const f of (arr(v.fl) || []).slice(-4)) if (arr(f) && !flSeen[f[0]]) { flSeen[f[0]] = 1; if (flStarted) floaters.push({ x: num(f[1], -1, 1), y: num(f[2], -.5, .5), text: String(f[3]).slice(0, 60), col: /^#[0-9a-fA-F]{6}$/.test(f[4]) ? f[4] : C.ink, t: 0 }); }
   flStarted = true;
+}
+
+/* ---------- a fourth screen: the phone that lies on their back ---------- */
+// The phone only forwards its accelerometer. The Tabble server turns that into a breath reading and
+// hands it back through the room, so every screen reads the same person. Inside claude.ai a page is
+// not given the motion sensor and the room has no feel(), so this screen says so and does nothing.
+const canFeel = () => 'DeviceMotionEvent' in window && window.isSecureContext !== false && !!room && typeof room.feel === 'function';
+let feeling = false, freshFeel = false, batch = [], flushT = 0, flushIn = 0, lastMotion = 0, wake = null, senseNote = '';
+const seenKey = {}, seenAt = {};
+function noteReadings() { for (const p of peers) { const r = p.presence && p.presence.reading, k = r ? `${r.seconds}:${r.wave}:${r.bpm}` : ''; if (k !== seenKey[p.peer]) { seenKey[p.peer] = k; seenAt[p.peer] = Date.now() - (r ? num(r.age, 0, 60000) : 0); } } } // age: how old the server says the reading already was
+function reading(own) { // the freshest reading in the room, checked like everything else from another screen
+  let best = null;
+  for (const p of peers) {
+    const r = p.presence && p.presence.reading; if (!r || typeof r !== 'object' || (own && !p.sameTab)) continue;
+    const at = seenAt[p.peer] || 0; if (Date.now() - at > 6000 || (best && at < best.at)) continue;
+    best = { at, bpm: num(r.bpm, 0, 60), sure: num(r.sure, 0, 1), settle: num(r.settle, 0, 1), move: num(r.move, 0, 1), seconds: num(r.seconds, 0, 60) };
+  }
+  return best && (own || best.seconds >= 10) ? best : null;
+}
+function onMotion(e) { const a = e.accelerationIncludingGravity; if (!a || a.x == null || a.y == null || a.z == null) return; lastMotion = performance.now(); if (batch.length < 400) batch.push([+a.x.toFixed(4), +a.y.toFixed(4), +a.z.toFixed(4)]); }
+async function startFeeling() {
+  if (feeling) { stopFeeling(); return; }
+  if (!canFeel()) return;
+  try { if (typeof DeviceMotionEvent.requestPermission === 'function' && await DeviceMotionEvent.requestPermission() !== 'granted') { senseNote = 'Motion was not allowed. Allow it for this page, then start again.'; return; } }
+  catch (err) { senseNote = 'The browser would not ask for motion. Reload the page, then start again.'; return; }
+  senseNote = ''; batch = []; flushT = lastMotion = performance.now(); addEventListener('devicemotion', onMotion); feeling = freshFeel = true; $('#feel').textContent = 'Stop feeling'; publish();
+  try { wake = await navigator.wakeLock.request('screen'); } catch (err) { wake = null; } // a sleeping phone stops feeling
+}
+function stopFeeling() { removeEventListener('devicemotion', onMotion); feeling = false; batch = []; try { if (wake) wake.release(); } catch (err) {} wake = null; $('#feel').textContent = 'Start feeling'; publish(); }
+$('#feel').addEventListener('click', startFeeling);
+function enterSense() { ROLE = 'sense'; G = null; S.run = null; show('sense'); if (location.hash !== '#sense') location.hash = 'sense'; publish(); }
+$('#sense').addEventListener('click', enterSense);
+function updSense(dt) {
+  $('#feel').disabled = !canFeel();
+  if (feeling) { flushIn -= dt; if (flushIn <= 0) { flushIn = .2; const now = performance.now(); if (batch.length) { room.feel(now - flushT, batch, freshFeel); freshFeel = false; batch = []; } flushT = now; } }
+  const r = reading(true);
+  hint(senseNote ? senseNote
+    : !room || typeof room.feel !== 'function' ? 'Nothing here can turn motion into breath. That takes the Tabble server: run it, then open its https address on this phone.'
+    : !canFeel() ? 'This browser will not give the page its motion sensor. Open the server\'s https address, not the http one.'
+    : !feeling ? 'Press start, then lay this phone on their lower back, screen up. It reads breath from how the phone tilts.'
+    : performance.now() - lastMotion > 3000 ? 'No motion is arriving. This device may have no sensor, or the browser is holding it back.'
+    : !r || r.seconds < 10 ? `Listening. ${Math.max(1, Math.ceil(10 - (r ? r.seconds : 0)))} s to the first reading. Leave it lying still.`
+    : `${r.bpm.toFixed(1)} breaths a minute, ${pad(r.sure * 100, 2)}% sure.${r.move > .5 ? ' Hands are on, so it is less sure.' : ''}`);
+}
+function drawPhoneSpot() { // where it goes
+  bodyXf(); const px = 1 / s; ctx.strokeStyle = C.cue; ctx.fillStyle = hexA(C.void, .55); ctx.lineWidth = 1.6 * px; ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(-.2, -.036, .15, .072, .012); else ctx.rect(-.2, -.036, .15, .072); ctx.fill(); ctx.stroke();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const [x, y] = toS(-.125, 0); if (feeling) drawHum(x, y, Math.max(16, .05 * s), .8);
 }
 
 /* ---------- 05 flip: they place the spots, you answer ---------- */
@@ -665,7 +724,7 @@ function updMoles(dt) {
         if (under.kind === 'decoy' && under.fill > .42) { under.out = .001; G.streak = 0; G.fooled++; say(under.z.x, under.z.y, 'feint. it never rippled.', C.ink); tick(20); pluck(0, .3); answer(under); }
         else if (under.fill >= 1) {
           under.out = .001; under.won = true; G.hit++; G.streak++; G.best = Math.max(G.best, G.streak);
-          const lean = under.set === S.lean && !G.live; if (!G.live) ease(-.028 * (lean ? 1.4 : 1) * (1 + Math.min(G.streak, 6) * .06)); answer(under);
+          const lean = under.set === S.lean && !G.live && !S.sensed; if (!G.live) ease(-.028 * (lean ? 1.4 : 1) * (1 + Math.min(G.streak, 6) * .06)); answer(under);
           say(under.z.x, under.z.y, lean ? `${st.id}. their lean.` : st.id, st.col); pluck(1 + under.set + Math.min(G.streak, 6), .5); tick(8);
         }
       }
@@ -895,7 +954,7 @@ function drawLobby() {
 // Depthfield's four: red rain, peach fall, mint clearing, night garden. The accent follows the weather and a chip names it.
 const WX = [{ id: 'red rain', acc: '#ff6b6b', rgb: [255, 150, 140] }, { id: 'peach fall', acc: '#ffb48a', rgb: [255, 206, 170] }, { id: 'mint clearing', acc: '#5ef2b8', rgb: [190, 255, 228] }, { id: 'night garden', acc: '#c9e6ff', rgb: [201, 226, 255] }];
 const wxMix = [0, 1, 0, 0], lampRGB = [255, 206, 170]; let wxKey = '';
-const noReading = () => S.screen === 'call' || S.screen === 'table' || !!(G && (G.kind === 'call' || G.live));
+const noReading = () => !S.sensed && (S.screen === 'call' || S.screen === 'table' || S.screen === 'sense' || !!(G && (G.kind === 'call' || G.live)));
 const lampA = a => `rgba(${lampRGB[0] | 0},${lampRGB[1] | 0},${lampRGB[2] | 0},${a})`;
 function updWeather(dt) {
   const settle = 1 - S.read, blind = noReading(), want = blind ? 1 : settle < .335 ? 0 : settle < .76 ? 1 : settle < .93 ? 2 : 3, key = want + (blind ? 'n' : '');
@@ -944,14 +1003,16 @@ function update(dt) {
   const tx = P.inside ? P.x : cx, ty = P.inside ? P.y : cy; L.x += (tx - L.x) * Math.min(1, dt * 5); L.y += (ty - L.y) * Math.min(1, dt * 5);
   bumps.length = 0; syncRoom();
   if (ROLE === 'play' && room) { pubT -= dt; if (pubT <= 0) { pubT = .085; if (others('watch').length) publish(); } }
-  const playing = G && !G.over && !S.stopped && G.kind !== 'call' && !G.live && S.screen !== 'watch';
+  S.sensed = reading(false); if (S.sensed) { S.conf = S.sensed.sure; if (S.sensed.sure >= .35) S.tension = 1 - S.sensed.settle; } // a real reading outranks the rehearsal
+  const playing = G && !G.over && !S.stopped && G.kind !== 'call' && !G.live && S.screen !== 'watch' && !S.sensed;
   if (playing) { ease(.0035 * dt); S.leanT -= dt; if (S.leanT <= 0) pickLean(); }
-  S.read += (S.tension - S.read) * Math.min(1, dt / 1.1); S.conf += (.92 - S.conf) * Math.min(1, dt / 2.5);
-  S.breath += dt * lerp(19, 7, 1 - S.read) / 60 * TAU; updWeather(dt);
+  S.read += (S.tension - S.read) * Math.min(1, dt / 1.1); if (!S.sensed) S.conf += (.92 - S.conf) * Math.min(1, dt / 2.5);
+  S.breath += dt * (S.sensed && S.sensed.bpm ? S.sensed.bpm : lerp(19, 7, 1 - S.read)) / 60 * TAU; updWeather(dt);
   logT += dt; while (logT > .05) { logT -= .05; breathLog[logI++ % 160] = still ? 0 : Math.sin(S.breath) * (.45 + .5 * (1 - S.read)); }
   if (S.stopped) return;
   if (S.screen === 'watch') { updWatch(dt); for (const f of floaters) f.t += dt; for (let i = floaters.length - 1; i >= 0; i--) if (floaters[i].t > 1.5) floaters.splice(i, 1); return; }
   if (S.screen === 'table') updTable(dt);
+  if (S.screen === 'sense') updSense(dt);
   if (S.screen === 'lobby') { const [bx, by] = pathAt((S.t / 7) % 1); bumps.push({ x: bx, y: by, a: .12, r: .13 }); }
   if (G && G.over) { G.after -= dt; if (G.after <= 0 && S.screen !== 'end') advance(); }
   else if (G) ({ moles: updMoles, hogs: updHogs, golf: updGolf, call: updCall, flip: updMoles })[G.kind](dt);
@@ -1065,6 +1126,7 @@ function draw() {
   if (S.stopped) return; // lights out
   if (S.screen === 'lobby' || (S.screen === 'watch' && !G)) drawLobby();
   else if (S.screen === 'table') for (const c of T.cues) drawCue(c);
+  else if (S.screen === 'sense') drawPhoneSpot();
   else if (G) {
     if (G.kind === 'moles' || G.kind === 'flip') for (const c of G.cues) drawCue(c);
     if (G.kind === 'hogs') for (const h of G.hogs) drawHog(h);
@@ -1076,16 +1138,19 @@ function draw() {
 const hud = {};
 function setText(id, t) { if (hud[id] !== t) { hud[id] = t; $(id).textContent = t; } }
 function drawHud() {
-  const call = S.screen === 'call' || (S.screen === 'watch' && !!G && G.kind === 'call') || (S.screen === 'end' && S.last === 'call'), table = S.screen === 'table', live = !!(G && G.kind === 'flip' && G.live), nocam = call || table || live, settle = 1 - S.read, small = W <= 760;
+  const call = S.screen === 'call' || (S.screen === 'watch' && !!G && G.kind === 'call') || (S.screen === 'end' && S.last === 'call'), table = S.screen === 'table', sense = S.screen === 'sense';
+  const live = !!(G && G.kind === 'flip' && G.live), real = S.sensed, nocam = !real && (call || table || live || sense), settle = 1 - S.read, small = W <= 760, pct = pad(S.conf * 100, 3);
   if (hud.nocam !== nocam) { hud.nocam = nocam; document.body.classList.toggle('nocam', nocam); }
-  setText('#who', table ? 'You are on the table' : live ? (small ? 'On a second screen' : 'Receiver · calling it from the table') : call ? (small ? 'No camera here' : 'Receiver · no camera reaches this page') : small ? `Inferred · ${pad(S.conf * 100, 3)}%` : `Receiver · inferred · ${pad(S.conf * 100, 3)}% sure`);
-  const word = table ? 'your call' : live ? 'their call' : call ? 'watch the breath' : wordFor(settle);
+  setText('#who', real ? (small ? `Breath · ${pct}%` : `Receiver · read from breath · ${pct}% sure`)
+    : sense ? 'This phone · on their back' : table ? 'You are on the table' : live ? (small ? 'On a second screen' : 'Receiver · calling it from the table')
+    : call ? (small ? 'No camera here' : 'Receiver · no camera reaches this page') : small ? `Inferred · ${pct}%` : `Receiver · inferred · ${pct}% sure`);
+  const word = real ? (real.sure >= .35 || S.conf >= .35 ? wordFor(settle) : 'listening') : sense ? (feeling ? 'listening' : 'not yet') : table ? 'your call' : live ? 'their call' : call ? 'watch the breath' : wordFor(settle);
   if (hud.word !== word) { hud.word = word; $('#word').textContent = word; }
   const w = Math.round(50 + 100 * (nocam ? .5 : settle)); if (hud.w !== w) { hud.w = w; $('#word').style.setProperty('--w', w); }
   if (nocam) return;
-  drawTrace(); setText('#breath', `${pad(lerp(19, 7, settle), 2)} / min`);
-  const lean = SETS[S.lean].id; if (hud.lean !== lean) { hud.lean = lean; $('#leans').innerHTML = `${glyphSvg(SETS[S.lean])}<span style="color:${SETS[S.lean].col}">${lean}</span>`; }
-  const pct = pad(settle * 100, 3) + '%'; if (hud.pct !== pct) { hud.pct = pct; $('#pct').textContent = pct; $('#meter').firstElementChild.style.width = (settle * 100).toFixed(1) + '%'; $('#meter').setAttribute('aria-valuenow', Math.round(settle * 100)); }
+  drawTrace(); setText('#breath', `${pad(real && real.bpm ? real.bpm : lerp(19, 7, settle), 2)} / min`);
+  const lean = real ? '' : SETS[S.lean].id; if (hud.lean !== lean) { hud.lean = lean; $('#leans').innerHTML = real ? 'not read' : `${glyphSvg(SETS[S.lean])}<span style="color:${SETS[S.lean].col}">${lean}</span>`; }
+  const p = pad(settle * 100, 3) + '%'; if (hud.pct !== p) { hud.pct = p; $('#pct').textContent = p; $('#meter').firstElementChild.style.width = (settle * 100).toFixed(1) + '%'; $('#meter').setAttribute('aria-valuenow', Math.round(settle * 100)); }
 }
 let lastT = 0;
 function frame(now) {

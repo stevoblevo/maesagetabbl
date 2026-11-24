@@ -16,6 +16,26 @@ Inferred, labelled inferred, with a confidence figure that dips after every even
 
 In this build the state is a rehearsal. A page inside claude.ai cannot reach a camera, and Call and Flip say so on screen.
 
+## Reading the receiver
+A phone lying on the lower back, screen up, tilts a degree or two with each breath. That moves gravity across its accelerometer axes, and that is the whole signal.
+
+The phone's page (`#sense`) only forwards samples, five posts a second. `internal/breath` does the reading:
+
+1. Average the samples down to 10 a second. This is what removes a massage gun's buzz.
+2. Keep what is slower than 0.7 s and faster than 10 s: 5 to 42 breaths a minute.
+3. Find the one direction the signal moves along and look only at that.
+4. Find the period at which the signal best repeats itself. That is the rate. How well it repeats is how sure the reading is.
+5. Settle comes from the rate alone, on the scale the game already draws: 19 a minute is braced, 7 is a puddle. It moves only while the reading is at least 35% sure, and is held otherwise.
+
+Shaking that is not breath (hands, a gun, a flinch) is reported separately and lowers "sure". It does not lower settle, because one sensor cannot tell the giver's hands from the receiver's flinch.
+
+On every screen a real reading outranks the rehearsal: the slot says "read from breath", points stop moving the state, and "leans" says "not read". When the phone stops, the screens go back to the rehearsal within six seconds and say "inferred" again. A reading belongs to one sensing session: pressing "Start feeling" again, or six seconds of silence from the phone, throws the old estimate away and the next one warms up from nothing. The server sends each reading with its age, and withdraws it once the phone has been quiet for six seconds, so a screen that joins or reloads later is never shown an old reading as current.
+
+What this is not, yet:
+- Checked on a body. Every signal it has seen was made by a test.
+- Personal. 19 and 7 are the same for everyone; a baseline per person would be more honest.
+- A camera. This reads breath, not a face. It is the cheapest true thing to read first.
+
 ## Weather
 The state is drawn a second way, so nobody has to read the slot: as weather over the receiver's own back, in Depthfield's four.
 
