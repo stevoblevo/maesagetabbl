@@ -2,7 +2,10 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stevoblevo/maesagetabbl/internal/breath"
 )
 
 func snap(t *testing.T, ch <-chan []byte) []Peer {
@@ -100,4 +105,115 @@ func TestServerInjectsRoomAndRejectsBadPresence(t *testing.T) {
 			t.Errorf("%s: got %d, want %d", name, res.StatusCode, tc.want)
 		}
 	}
+}
+
+func TestAPhoneOnTheBackBecomesAReadingInTheRoom(t *testing.T) {
+	r := NewRoom()
+	if r.Feel("aaaaaaaa", 0.02, []breath.Sample{{Z: 9.8}}) {
+		t.Fatal("a phone with no stream was felt")
+	}
+	phone, _ := r.Join("aaaaaaaa")
+	snap(t, phone)
+	r.Set("aaaaaaaa", json.RawMessage(`{"role":"sense"}`))
+	snap(t, phone)
+
+	// 30 s of a back breathing 9 times a minute, posted five times a second as the page does.
+	const hz, g = 50.0, 9.80665
+	var last []Peer
+	for i := 0; i < 30*5; i++ {
+		batch := make([]breath.Sample, 10)
+		for j := range batch {
+			tt := float64(i*10+j) / hz
+			tilt := 1.2 * math.Pi / 180 * math.Sin(2*math.Pi*9/60*tt)
+			batch[j] = breath.Sample{X: g * math.Sin(tilt), Y: 0.3, Z: g * math.Cos(tilt)}
+		}
+		if !r.Feel("aaaaaaaa", 1/hz, batch) {
+			t.Fatal("the phone's samples were refused")
+		}
+		select {
+		case b := <-phone:
+			json.Unmarshal(b, &last)
+		default:
+		}
+	}
+	if len(last) != 1 || last[0].Reading == nil {
+		t.Fatalf("no reading reached the room: %+v", last)
+	}
+	if got := last[0].Reading; math.Abs(got.BPM-9) > 0.6 || got.Sure < 0.7 {
+		t.Fatalf("read %.2f breaths a minute, %.2f sure; want 9 and sure", got.BPM, got.Sure)
+	}
+	if string(last[0].Presence) != `{"role":"sense"}` {
+		t.Fatalf("the reading overwrote the phone's own presence: %s", last[0].Presence)
+	}
+	r.Set("aaaaaaaa", json.RawMessage(`{"role":"sense","on":true}`))
+	if got := snap(t, phone); got[0].Reading == nil {
+		t.Fatal("setting presence dropped the reading")
+	}
+}
+
+func TestSamplesAreChecked(t *testing.T) {
+	room := NewRoom()
+	srv := httptest.NewServer(handler(t.TempDir(), room))
+	defer srv.Close()
+	room.Join("aaaaaaaa")
+	for name, tc := range map[string]struct {
+		body string
+		want int
+	}{
+		"good":             {`{"ms":200,"s":[[0,0,9.8],[0,0,9.8]]}`, http.StatusNoContent},
+		"no samples":       {`{"ms":200,"s":[]}`, http.StatusBadRequest},
+		"no span":          {`{"s":[[0,0,9.8]]}`, http.StatusBadRequest},
+		"a minute at once": {`{"ms":60000,"s":[[0,0,9.8]]}`, http.StatusBadRequest},
+		"not samples":      {`{"ms":200,"s":"x"}`, http.StatusBadRequest},
+	} {
+		res, err := http.Post(srv.URL+"/sense/samples?peer=aaaaaaaa", "application/json", strings.NewReader(tc.body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		if res.StatusCode != tc.want {
+			t.Errorf("%s: got %d, want %d", name, res.StatusCode, tc.want)
+		}
+	}
+}
+
+func TestCertificateIsMadeOnceAndNamesThisMachine(t *testing.T) {
+	dir := t.TempDir()
+	hosts := []string{"192.168.1.20"}
+	first, err := certificate(dir, hosts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	leaf, _ := x509.ParseCertificate(first.Certificate[0])
+	for _, h := range []string{"192.168.1.20", "localhost", "127.0.0.1"} {
+		if leaf.VerifyHostname(h) != nil {
+			t.Errorf("the certificate does not name %s", h)
+		}
+	}
+	again, _ := certificate(dir, hosts)
+	if string(again.Certificate[0]) != string(first.Certificate[0]) {
+		t.Error("a second start made a new certificate; a phone would be asked to accept it again")
+	}
+	moved, _ := certificate(dir, []string{"10.0.0.7"})
+	if string(moved.Certificate[0]) == string(first.Certificate[0]) {
+		t.Error("the machine's address changed and the old certificate was reused")
+	}
+
+	// And it really serves: a client that trusts exactly this certificate can fetch the page.
+	web := t.TempDir()
+	os.WriteFile(filepath.Join(web, "index.html"), []byte("<!DOCTYPE html><html><body></body></html>"), 0o644)
+	srv := httptest.NewUnstartedServer(handler(web, NewRoom()))
+	local, _ := certificate(t.TempDir(), []string{"127.0.0.1"})
+	srv.TLS = &tls.Config{Certificates: []tls.Certificate{local}}
+	srv.StartTLS()
+	defer srv.Close()
+	pool := x509.NewCertPool()
+	l, _ := x509.ParseCertificate(local.Certificate[0])
+	pool.AddCert(l)
+	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool}}}
+	res, err := client.Get(srv.URL)
+	if err != nil {
+		t.Fatalf("https with the self-made certificate failed: %v", err)
+	}
+	res.Body.Close()
 }
