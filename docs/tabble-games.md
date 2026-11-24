@@ -48,7 +48,7 @@ The phone's page (`#sense`) only forwards samples, five posts a second. `interna
 
 Shaking that is not breath (hands, a gun, a flinch) is reported separately and lowers "sure". It does not lower settle, because one sensor cannot tell the giver's hands from the receiver's flinch.
 
-On every screen a real reading outranks the rehearsal: the slot says "read from breath", points stop moving the state, and "leans" says "not read". When the phone stops, the screens go back to the rehearsal within six seconds and say "inferred" again.
+On every screen a real reading outranks the rehearsal: the slot says "read from breath", points stop moving the state, and "leans" says "not read". When the phone stops, the screens go back to the rehearsal within six seconds and say "inferred" again. A reading belongs to one sensing session: pressing "Start feeling" again, or six seconds of silence from the phone, throws the old estimate away and the next one warms up from nothing. The server sends each reading with its age, and withdraws it once the phone has been quiet for six seconds, so a screen that joins or reloads later is never shown an old reading as current.
 
 What this is not, yet:
 - Checked on a body. Every signal it has seen was made by a test.

@@ -10,8 +10,9 @@
   const es = new EventSource('/room/events?peer=' + peer);
   es.onmessage = e => {
     try {
-      // a reading is the server's own word about a phone's breath signal; it rides in that phone's presence
-      peers = JSON.parse(e.data).map(p => ({ peer: p.peer, by: null, isMe: p.peer === peer, sameTab: p.peer === peer, kind: 'viewer', guest: false, presence: p.reading ? { ...(p.presence || {}), reading: p.reading } : p.presence || {}, updatedAt: p.updatedAt }));
+      // a reading is the server's own word about a phone's breath signal; it rides in that phone's presence,
+      // with its age in milliseconds when the server sent it (screens do not share a clock)
+      peers = JSON.parse(e.data).map(p => ({ peer: p.peer, by: null, isMe: p.peer === peer, sameTab: p.peer === peer, kind: 'viewer', guest: false, presence: p.reading ? { ...(p.presence || {}), reading: { ...p.reading, age: p.readingAge || 0 } } : p.presence || {}, updatedAt: p.updatedAt }));
       tell();
     } catch (err) {}
   };
@@ -23,7 +24,8 @@
     peers: () => peers,
     connected: () => es.readyState === 1,
     // Not part of the claude.ai room: only this server can turn motion into breath.
-    feel: (ms, samples) => fetch('/sense/samples?peer=' + peer, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ms, s: samples }) }).catch(() => {}),
+    // fresh marks the first post of a sensing session, so the server starts a new estimate.
+    feel: (ms, samples, fresh) => fetch('/sense/samples?peer=' + peer, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fresh ? { ms, s: samples, new: true } : { ms, s: samples }) }).catch(() => {}),
   };
   window.claude = { use: async name => name === 'room' ? room : null };
 })();

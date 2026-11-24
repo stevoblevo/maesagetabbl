@@ -120,7 +120,7 @@ func TestServerInjectsRoomAndRejectsBadPresence(t *testing.T) {
 
 func TestAPhoneOnTheBackBecomesAReadingInTheRoom(t *testing.T) {
 	r := NewRoom()
-	if r.Feel("aaaaaaaa", 0.02, []breath.Sample{{Z: 9.8}}) {
+	if r.Feel("aaaaaaaa", 0.02, []breath.Sample{{Z: 9.8}}, false) {
 		t.Fatal("a phone with no stream was felt")
 	}
 	phone, _ := r.Join("aaaaaaaa")
@@ -138,7 +138,7 @@ func TestAPhoneOnTheBackBecomesAReadingInTheRoom(t *testing.T) {
 			tilt := 1.2 * math.Pi / 180 * math.Sin(2*math.Pi*9/60*tt)
 			batch[j] = breath.Sample{X: g * math.Sin(tilt), Y: 0.3, Z: g * math.Cos(tilt)}
 		}
-		if !r.Feel("aaaaaaaa", 1/hz, batch) {
+		if !r.Feel("aaaaaaaa", 1/hz, batch, false) {
 			t.Fatal("the phone's samples were refused")
 		}
 		select {
@@ -227,4 +227,94 @@ func TestCertificateIsMadeOnceAndNamesThisMachine(t *testing.T) {
 		t.Fatalf("https with the self-made certificate failed: %v", err)
 	}
 	res.Body.Close()
+}
+
+// clock is a room's clock that only moves when a test moves it.
+type clock struct{ t time.Time }
+
+func (c *clock) now() time.Time { return c.t }
+
+// breathe posts seconds of a back breathing bpm times a minute, five posts a second as the page
+// does, moving the clock with the signal. It returns the last snapshot the listener was sent.
+func breathe(t *testing.T, r *Room, c *clock, listen <-chan []byte, id string, bpm, seconds float64, fresh bool) []Peer {
+	t.Helper()
+	const hz, g = 50.0, 9.80665
+	var last []Peer
+	for i := 0; i < int(seconds*5); i++ {
+		batch := make([]breath.Sample, 10)
+		for j := range batch {
+			tt := float64(i*10+j) / hz
+			tilt := 1.2 * math.Pi / 180 * math.Sin(2*math.Pi*bpm/60*tt)
+			batch[j] = breath.Sample{X: g * math.Sin(tilt), Y: 0.3, Z: g * math.Cos(tilt)}
+		}
+		c.t = c.t.Add(200 * time.Millisecond)
+		if !r.Feel(id, 1/hz, batch, fresh && i == 0) {
+			t.Fatal("the phone's samples were refused")
+		}
+		for more := true; more; {
+			select {
+			case b := <-listen:
+				last = nil
+				json.Unmarshal(b, &last)
+			default:
+				more = false
+			}
+		}
+	}
+	return last
+}
+
+func TestANewSensingSessionStartsFromNothing(t *testing.T) {
+	for name, pause := range map[string]struct {
+		wait  time.Duration
+		fresh bool
+	}{
+		"the phone says it started again": {time.Second, true},
+		"the phone went quiet":            {30 * time.Second, false},
+	} {
+		c := &clock{t: time.Unix(1_800_000_000, 0)}
+		r := NewRoom()
+		r.now = c.now
+		phone, _ := r.Join("aaaaaaaa")
+		got := breathe(t, r, c, phone, "aaaaaaaa", 9, 40, true)
+		if len(got) != 1 || got[0].Reading == nil || math.Abs(got[0].Reading.BPM-9) > 0.6 {
+			t.Fatalf("%s: the first session did not read 9: %+v", name, got)
+		}
+		c.t = c.t.Add(pause.wait)
+		got = breathe(t, r, c, phone, "aaaaaaaa", 19, 0.4, pause.fresh)
+		if len(got) != 1 || got[0].Reading != nil {
+			t.Fatalf("%s: the old session's reading was still in the room: %+v", name, got[0].Reading)
+		}
+		got = breathe(t, r, c, phone, "aaaaaaaa", 19, 9.6, false)
+		if rd := got[0].Reading; rd == nil || rd.Seconds > 11 || (rd.BPM != 0 && math.Abs(rd.BPM-9) < 2) {
+			t.Fatalf("%s: ten seconds into the new session it still stood on the old one: %+v", name, rd)
+		}
+		got = breathe(t, r, c, phone, "aaaaaaaa", 19, 20, false)
+		if rd := got[0].Reading; rd == nil || math.Abs(rd.BPM-19) > 1.2 {
+			t.Fatalf("%s: thirty seconds into the new session it did not read 19: %+v", name, rd)
+		}
+	}
+}
+
+func TestAnOldReadingIsNotHandedToAScreenThatJoinsLater(t *testing.T) {
+	c := &clock{t: time.Unix(1_800_000_000, 0)}
+	r := NewRoom()
+	r.now = c.now
+	phone, _ := r.Join("aaaaaaaa")
+	breathe(t, r, c, phone, "aaaaaaaa", 9, 30, true)
+
+	c.t = c.t.Add(2 * time.Second)
+	soon, _ := r.Join("bbbbbbbb")
+	got := snap(t, soon)
+	if got[0].Reading == nil || got[0].ReadingAge < 2000 || got[0].ReadingAge > 3000 {
+		t.Fatalf("two seconds on, want the reading with its age: %+v age %d", got[0].Reading, got[0].ReadingAge)
+	}
+
+	c.t = c.t.Add(time.Hour)
+	late, _ := r.Join("cccccccc")
+	for _, p := range snap(t, late) {
+		if p.Reading != nil || p.ReadingAge != 0 {
+			t.Fatalf("an hour on, %s was still handed a reading aged %d ms", p.Peer, p.ReadingAge)
+		}
+	}
 }
