@@ -86,6 +86,17 @@ func TestServerInjectsRoomAndRejectsBadPresence(t *testing.T) {
 	if !strings.Contains(buf.String(), `<script src="/room.js"></script>`) {
 		t.Fatal("the page was served without the room stand-in")
 	}
+	for name, page := range map[string]string{
+		"a head":              `<html><head><title>t</title></head><body class="df-page"><script>go()</script></body></html>`,
+		"a body with a class": `<html><body class="df-page df-no-js"><script>go()</script></body></html>`,
+		"neither":             `<p>bare</p>`,
+	} {
+		got := string(withRoom([]byte(page)))
+		room, own := strings.Index(got, `<script src="/room.js">`), strings.Index(got, `<script>go()`)
+		if room < 0 || (own >= 0 && room > own) {
+			t.Errorf("%s: the stand-in must come before the page's own script: %s", name, got)
+		}
+	}
 
 	for name, tc := range map[string]struct {
 		url, body string
