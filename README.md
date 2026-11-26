@@ -82,6 +82,10 @@ The tests cover the room (presence travels between screens, a leaving screen is 
 
 Not yet checked on a person. The games were play-tested in a headless browser, and the breath reading has only ever seen signals a test made up. A real back, a real phone and real hands are issue #1 and issue #4.
 
+## Versions
+
+Every version of the page is tagged (`v2` onward) and described in [CHANGELOG.md](CHANGELOG.md). The lobby shows which one you are looking at.
+
 ## Where plans live
 
 Issues. One issue per decision or build step; comment there. To change something, read [CONTRIBUTING.md](CONTRIBUTING.md) first; it is short.

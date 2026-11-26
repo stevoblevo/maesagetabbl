@@ -7,7 +7,8 @@ Anyone is welcome. This is a small project with strong opinions, so here they ar
 1. **Issues first.** One issue per decision or build step. Comment there before building something large.
 2. **Branch and pull request.** Nothing goes straight to `main`.
 3. **Review.** An automated Codex review runs on pull requests here. Fix what it finds, or say on the thread why it is wrong.
-4. **Say what you checked and what you did not.** Every pull request ends with both lists. "Not checked on a person" is an honest line and most of ours carry it.
+4. **We version.** A change to the page bumps `VERSION` in `web/index.html` (it shows on the lobby), adds an entry to `CHANGELOG.md`, and is tagged on `main` once merged. Nothing is deleted to make room: old versions stay reachable by tag.
+5. **Say what you checked and what you did not.** Every pull request ends with both lists. "Not checked on a person" is an honest line and most of ours carry it.
 
 ## Run it
 

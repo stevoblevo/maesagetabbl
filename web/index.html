@@ -112,7 +112,7 @@ body.watching #hint { font-size: 15px; line-height: 21px; max-width: 60ch; }
 
 <header id="head" class="df-over-art">
   <div class="df-chapter">
-    <span class="df-chapter__eyebrow" id="eyebrow">Maesage · the Tabble</span>
+    <span class="df-chapter__eyebrow" id="eyebrow">Maesage · the Tabble · v8</span>
     <h2 class="df-h-m" id="title">One lays on the table and the other… <em>plays</em>.</h2>
   </div>
   <p class="df-hint" id="hint" aria-live="polite">Press a stop on the back, or throw the strawberry at one. Begin plays 01 to 03 down the back.</p>
@@ -427,8 +427,9 @@ function motor(on, hz = 20, vol = .22) { // the gun's purr
 const tick = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (err) {} };
 
 /* ---------- screens ---------- */
+const VERSION = 'v8'; // shown on the lobby so anyone can tell which page they are looking at. Bump it with CHANGELOG.md and a tag.
 const HEAD = {
-  lobby: ['Maesage · the Tabble', 'One lays on the table and the other… <em>plays</em>.'],
+  lobby: ['Maesage · the Tabble · ' + VERSION, 'One lays on the table and the other… <em>plays</em>.'],
   moles: ['Game 01 — Moles', 'The gun <em>tunes</em> itself.'],
   hogs: ['Game 02 — Hedgehogs', 'Knots with <em>legs</em>.'],
   golf: ['Game 03 — Golf', 'The cup is the <em>knot</em>.'],
