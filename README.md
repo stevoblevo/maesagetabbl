@@ -74,3 +74,9 @@ Not yet checked on a person. The games were play-tested in a headless browser, a
 ## Where plans live
 
 Issues. One issue per decision or build step; comment there.
+
+## Licence
+
+Apache License 2.0, in [LICENSE](LICENSE). Use it, change it, ship it; keep the licence and say what you changed. Contributions are taken under the same licence, and it carries a patent grant from each contributor for what they contribute.
+
+One part is not covered: `web/vendor/depthfield-2.3.0/` is a copy of [Depthfield](https://github.com/stevoblevo/depthfield), a separate kit by the same author, and it stays under that project's own terms.
