@@ -29,7 +29,7 @@ These are not style preferences. A change that breaks one will be asked to chang
 - **Say what is known.** A rehearsed state says "rehearsed", a guess says "inferred", a reading says what it read and how sure it is. Where nothing is reading the receiver, the page says so and shows no figure.
 - **Never points.** The score is the receiver settling.
 - **The gun has limits.** It cuts out over the spine, neck, head and the backs of the knees, and the receiver's ceiling caps it.
-- **No skin, no anatomy.** The figure is the suit. Draw the garment, the table, the cues and the creatures.
+- **No body.** The receiver is a hood above a quilt. Do not draw skin, anatomy or an outline of a person; draw the quilt, the table, the cues and the creatures. Five figures were tried before this (see `docs/tabble-games.md`).
 - **Colour is a setting.** Each setting also has a glyph, so colour never carries meaning alone.
 - **Nothing from another screen is trusted.** Presence is clamped and re-checked; no markup comes off the wire.
 
