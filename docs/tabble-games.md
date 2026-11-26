@@ -25,22 +25,32 @@ The room light is new play: dim it and the back fades while lit spots stay brigh
 
 Not done: Storeybrook and Hypermetapunk. The family plan says day looks reward stillness, print looks reward impact and tempo, night looks reward a light source. That maps onto the games (Hedgehogs, Moles, Golf) and is written up as an issue, not built.
 
-## The suit (the page draws no body)
-Bleve called the first figure funky, the second (an anatomical relief in a warm light) creepy, and the third (a flat grey suit on realistic proportions) still weird. The first two drew a person. The third drew a suit on a person-shaped mannequin, which is a chalk outline with seams. The thing on the page he liked without being asked was the strawberry: a round character with one eye.
+## Tucked in (the page draws no body)
+Five figures were tried and every one drew the same reaction from Bleve:
 
-So the figure is now a character in the strawberry's family: a plush onesie.
+| Version | What it drew | Verdict |
+|---|---|---|
+| v1 | Nested capsule outlines | funky |
+| v2 to v5 | Anatomy from profile curves, lit as a warm relief with contour rings | creepy |
+| v6 | A flat grey suit with seams and cells, on realistic proportions | weird |
+| v7 | A plush onesie with ears | odd, fine for now |
+| (unshipped) | A tapered sleeping bag with a zip | a body bag; binned |
 
-- **Shape.** Still a height field seen from above, because the games need one: Golf rolls a ball down it, hedgehogs slide on it, and cues must land on it. The parts are chunky padded tubes with round ends (`TORSO`, `LEG`, `ARM`, each through `cap()`): a boxy body, fat sleeves and legs, mittens and boots, a big round hood. No shoulder blades, no glutes, no waist.
-- **Ears.** The hood has two. They are the receiver's state on the figure itself: up when braced, flopped when settled. Where there is no reading they sit in between.
-- **Cloth.** One flat neutral with a soft rim, lighter where the lamp reaches. No skin tone: the cloth is a mix of the page's two inks, so the only colour on the suit is a setting's.
-- **Seams are the limits.** Every place the gun will not run is a seam or a panel: the zip down the spine, the collar, the knee gussets. Waistband, gussets, mittens and boots are colour-blocked darker.
-- **Cells.** A hex grid of haptic cells covers the suit, none on the rim or in the hood. Dim at rest, brighter under the lamp, swelling with the breath (19 a minute tense, 7 settled), and ringing white where the suit hums. In Golf the cells lie along the slope like mown grass, so the green can be read.
-- **Pod.** A small unit at the nape with one light: the only place the suit shows the page's accent. It dims when Stop is pressed.
-- **The strawberry mirrors it.** The guardian's eye closes as the receiver settles, so the giver can read the state without looking down at the word.
+What they shared was a whole figure lying face down, seen from above, with an outline to get wrong. So the outline is gone. The page draws what a massage table really looks like: someone tucked in.
 
-Rule: do not draw skin or anatomy here. Draw the garment, the table, the cues and the creatures.
+- **A hood and a quilt.** All that shows of the person is a hood and the tops of the shoulders above the quilt's hem. Everything else is a rectangular patchwork quilt, which is also the board the games are played on.
+- **A soft rise.** Where the person lifts the quilt the cloth is lighter and the cells are brighter. It has no edge. The rise swells with the breath.
+- **The shape underneath.** The games still need one: Golf rolls a ball down it, hedgehogs walk on it, and cues must land on it. It is a single padded tube (`BAG`) with a dip down the lower half where two legs lie, which is Golf's fairway. It is never stroked.
+- **Ears.** The hood has two. They are the receiver's state on the page: up when braced, flopped when settled, in between where there is no reading.
+- **Cloth.** One neutral in patches a little lighter or darker, stitched. No skin tone: the cloth is a mix of the page's two inks, so the only colour on the quilt is a setting's.
+- **Cells.** A hex grid of haptic cells covers the whole quilt. Brighter where the person is and under the lamp, and ringing white where the quilt hums. In Golf the cells lie along the slope like mown grass, so the green can be read.
+- **Limits.** The gun's limits are drawn only in the games that use the gun: a dashed line down the spine and a bar behind the knees.
+- **Pod.** A small unit on the hem with one light: the only place the quilt shows the page's accent. It dims when Stop is pressed.
+- **The strawberry mirrors the receiver.** The guardian's eye closes as the receiver settles, so the giver can read the state without looking down at the word.
 
-The outline is traced once at load into a single path (`SUIT`), so there is no per-frame relief.
+Rule: do not draw a body here. No skin, no anatomy, no outline of a person.
+
+The hood and shoulders are traced once at load into a path (`SUIT`) and shown only above the hem.
 
 ## The receiver's state
 Inferred, labelled inferred, with a confidence figure that dips after every event. Words in order: braced, caffeinated, still, curious, arriving, calm, puddle. The word's width is the state. "Leans" is the inferred preference; matching it settles the receiver about 40% more, and it drifts every 8–12 s.

@@ -4,13 +4,13 @@ One lays on the table and the other… plays.
 
 Maesage is a haptic suit and a partner touch game. The suit lights a spot and hums under it; the player answers with hands or a massage gun; the gun tunes itself by hovering. This repo holds the playable browser studies, the server that links two screens, and the plans.
 
-![The lobby: a plush suit on a table, five games placed on it, and the strawberry guardian](docs/img/lobby.jpg)
+![The lobby: someone tucked in under a quilt on the table, five games placed on it, and the strawberry guardian](docs/img/lobby.jpg)
 
 | Moles: hover a lit spot and the gun tunes itself | Golf: the cells lie along the slope |
 |---|---|
 | ![Moles](docs/img/moles.jpg) | ![Golf](docs/img/golf.jpg) |
 
-The figure is the suit, never a body: a padded onesie with haptic cells. Its ears and the strawberry's eye both follow the receiver, from braced to puddle:
+No body is drawn. The receiver is tucked in under a quilt of haptic cells, and the quilt is the board the games are played on. The hood's ears and the strawberry's eye both follow the receiver, from braced to puddle:
 
 ![Braced, arriving, puddle: the ears flop and the strawberry dozes](docs/img/states.jpg)
 
@@ -63,7 +63,7 @@ The page is built on Depthfield, the night half of the toolkit family: its token
 - The receiver's state word is the page's one stretch line: its width is how settled they are.
 - The lamp follows the hand and the room light dims what only reflects. Lit spots keep their own light.
 - The strawberry guardian reviews in one dry line and can be thrown at a stop to start it. Its eye closes as the receiver settles.
-- The figure is the suit, not a person: no skin, no anatomy. Its hood has ears, up when the receiver is braced and flopped when they are a puddle.
+- No body is drawn: no skin, no anatomy, no outline. A hood shows above a quilt, and the cloth is lighter where the person lifts it. The hood has ears, up when the receiver is braced and flopped when they are a puddle.
 - A rehearsed state says "rehearsed", a guess says "inferred", a reading says what it read.
 
 Check a change with Taste before anyone reviews it: open the page with `?df-taste`, at desktop and phone width, in night, day and high contrast. It is clean today.
@@ -81,6 +81,10 @@ go vet ./... && go test ./...
 The tests cover the room (presence travels between screens, a leaving screen is forgotten, bad presence is refused), the certificate, and the breath estimator against a synthetic phone: rates from 6 to 24 a minute, an empty table, a massage gun running, a breath that slows.
 
 Not yet checked on a person. The games were play-tested in a headless browser, and the breath reading has only ever seen signals a test made up. A real back, a real phone and real hands are issue #1 and issue #4.
+
+## Versions
+
+Every version of the page is tagged (`v2` onward) and described in [CHANGELOG.md](CHANGELOG.md). The lobby shows which one you are looking at.
 
 ## Where plans live
 

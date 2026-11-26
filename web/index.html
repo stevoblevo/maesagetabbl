@@ -112,7 +112,7 @@ body.watching #hint { font-size: 15px; line-height: 21px; max-width: 60ch; }
 
 <header id="head" class="df-over-art">
   <div class="df-chapter">
-    <span class="df-chapter__eyebrow" id="eyebrow">Maesage · the Tabble</span>
+    <span class="df-chapter__eyebrow" id="eyebrow">Maesage · the Tabble · v8</span>
     <h2 class="df-h-m" id="title">One lays on the table and the other… <em>plays</em>.</h2>
   </div>
   <p class="df-hint" id="hint" aria-live="polite">Press a stop on the back, or throw the strawberry at one. Begin plays 01 to 03 down the back.</p>
@@ -242,7 +242,7 @@ $('#legend').innerHTML = SETS.map(s => `<li class="df-tag${TONE[s.id]}" data-set
 /* ---------- the receiver as a suit: a padded garment with haptic cells, never a body ---------- */
 // The page draws the thing this project is about, the suit, and no skin: flat fabric, seams, and a grid of cells.
 // body space: x runs head (-) to feet (+), y is across. Prone, so their left is +y.
-// Every part is a padded tube along x: a centre line, a half-width and a height, each a smooth curve through a few points.
+// The cover is one padded tube along x: a half-width and a height, each a smooth curve through a few points. No limbs are drawn.
 function curve(pts) {
   const n = pts.length;
   return x => {
@@ -260,22 +260,17 @@ const cap = (f, a, b, ra, rb) => x => { // a tube with round ends, like a sleeve
   if (x > b - rb) { const u = (x - b + rb) / rb; w *= Math.sqrt(1 - u * u); }
   return w;
 };
-const TORSO = { c: flat(0), w: cap(curve([[-.9, .05], [-.74, .052], [-.69, .075], [-.645, .135], [-.6, .176], [-.5, .192], [-.3, .188], [-.12, .186], [.02, .186], [.12, .186], [.3, .186]]), -.8, .2, .01, .1),
-  h: curve([[-.9, .36], [-.7, .44], [-.62, .62], [-.5, .72], [-.3, .7], [-.1, .66], [.05, .66], [.3, .64]]) };
-const LEG = { c: curve([[-.4, .093], [-.1, .093], [.0, .093], [.3, .093], [.5, .092], [.84, .092], [1, .093]]), w: cap(curve([[-.4, .093], [-.1, .093], [.1, .093], [.5, .078], [.9, .068], [1.1, .068]]), -.22, .985, .22, .068),
-  h: curve([[-.4, .64], [-.1, .64], [.2, .62], [.5, .52], [.8, .42], [1.1, .36]]) };
-const ARM = { c: curve([[-.75, .12], [-.63, .15], [-.52, .236], [-.3, .28], [-.1, .286], [.03, .28], [.2, .27]]), w: cap(curve([[-.8, .06], [-.6, .062], [-.3, .059], [0, .057], [.3, .057]]), -.635, .14, .1, .057),
-  h: curve([[-.8, .5], [-.5, .5], [-.2, .42], [.3, .32]]) };
+const BAG = { c: flat(0), w: cap(curve([[-.9, .05], [-.74, .052], [-.69, .08], [-.645, .15], [-.6, .19], [-.5, .206], [-.3, .2], [-.1, .192], [.1, .186], [.3, .172], [.5, .155], [.7, .136], [.9, .118], [1.1, .118]]), -.8, .985, .01, .11),
+  h: curve([[-.9, .36], [-.7, .44], [-.62, .6], [-.5, .72], [-.3, .7], [-.1, .66], [.2, .62], [.5, .54], [.8, .46], [1.1, .42]]) };
 function tube(p, x, y, sgn) { const w = p.w(x); if (w <= 0) return 0; const u = (y - sgn * p.c(x)) / w; return u <= -1 || u >= 1 ? 0 : p.h(x) * Math.pow(1 - u * u, 1.15); }
 function capH(x, y) {
   let q = 0, v;
   const hx = (x + .84) / .118, hy = y / .112, hu = hx * hx + hy * hy; if (hu < 1) { v = .95 * (1 - hu); q += v * v * v * v; } // the hood, face in the cradle
-  v = tube(TORSO, x, y, 0); q += v * v * v * v;
-  v = .5 * (1 - ((x - .2) * (x - .2) + y * y) / .0016); if (v > 0) q += v * v * v * v; // a gusset, so the inseam ends round
-  for (const sgn of [-1, 1]) { v = tube(LEG, x, y, sgn); q += v * v * v * v; v = tube(ARM, x, y, sgn); q += v * v * v * v; }
+  v = tube(BAG, x, y, 0); q += v * v * v * v;
   if (q <= 0) return 0;
-  let h = Math.sqrt(Math.sqrt(q)); // panels meet like padding
+  let h = Math.sqrt(Math.sqrt(q)); // hood and cover meet like padding
   if (x > -.68 && x < -.02) h -= .06 * Math.min(1, h * 3) * Math.exp(-(y * y) / .0005) * clamp((x + .68) / .06, 0, 1) * clamp((-.02 - x) / .06, 0, 1); // the zip runs in a channel
+  if (x > .08) h -= .07 * Math.min(1, h * 3) * Math.exp(-(y * y) / .0016) * clamp((x - .08) / .12, 0, 1) * clamp((.94 - x) / .1, 0, 1); // the cover dips where two legs lie under it: Golf's fairway
   return h > 0 ? h : 0;
 }
 const X0 = -1, X1 = 1, Y0 = -.48, Y1 = .48;
@@ -304,23 +299,27 @@ const SUIT = (() => { // the suit's edge, traced once from the field into closed
   }
   return path;
 })();
-// the haptic cells, on a hex grid that straddles the zip: [x, y, how much breath moves it, downhill x, downhill y]
+// The quilt: what is on the table is a person tucked in, the way a massage table really looks. Their outline is never drawn.
+const QX0 = -.64, QX1 = .995, QY = .345;
+// its haptic cells, on a hex grid over the whole quilt: [x, y, how far the person under it lifts it, how much breath moves it, downhill x, downhill y]
 const CELLS = [];
-for (let r = 0, y = -.465; y < Y1; y += .03, r++) for (let x = X0 + (r % 2 ? .0173 : 0); x < X1; x += .0346) {
-  if (capH(x, y) < .2 || hyp(x + .84, y) < .135) continue; // none on the rim, none in the hood
-  const [gx, gy] = grad(x, y); CELLS.push([x, y, Math.exp(-(((x + .3) / .28) ** 2)) * Math.exp(-((y / .22) ** 2)), -gx, -gy]);
+for (let r = 0, y = -.33; y < QY - .01; y += .03, r++) for (let x = QX0 + .03 + (r % 2 ? .0173 : 0); x < QX1 - .015; x += .0346) {
+  const h = capH(x, y), [gx, gy] = h > .02 ? grad(x, y) : [0, 0];
+  CELLS.push([x, y, clamp(h / .7, 0, 1), Math.exp(-(((x + .3) / .28) ** 2)) * Math.exp(-((y / .22) ** 2)), -gx, -gy]);
 }
+// its patches: one fixed tone each, a little lighter or darker, like a quilt sewn from the same cloth twice dyed
+const PATCH = []; { const nx = 15, ny = 6, w = (QX1 - QX0) / nx, hgt = 2 * QY / ny; let k = 7; for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) { k = (k * 1103515245 + 12345) & 0x7fffffff; PATCH.push([QX0 + i * w, -QY + j * hgt, w, hgt, (k / 0x7fffffff) * 2 - 1]); } }
 
 /* ---------- zones on a back ---------- */
 const Z = [];
-for (const [part, x, y, r] of [['shoulder', -.59, .125, .066], ['blade', -.44, .095, .068], ['mid back', -.27, .092, .068], ['low back', -.11, .082, .066], ['hip', .07, .088, .07], ['hamstring', .3, .092, .062], ['calf', .64, .092, .056], ['sole', .9, .092, .05]]) {
+for (const [part, x, y, r] of [['shoulder', -.59, .125, .066], ['blade', -.44, .095, .068], ['mid back', -.27, .092, .068], ['low back', -.11, .082, .066], ['hip', .07, .088, .07], ['hamstring', .3, .086, .062], ['calf', .64, .076, .052], ['sole', .9, .06, .044]]) {
   Z.push({ side: 'left', part, x, y, r }); Z.push({ side: 'right', part, x, y: -y, r });
 }
 function noGo(x, y) {
   if (x > -.66 && x < 0 && Math.abs(y) < .026) return 'spine';
   if (x > -.76 && x <= -.66 && Math.abs(y) < .07) return 'neck';
   if (hyp(x + .84, y) < .12) return 'head';
-  if (Math.abs(x - .5) < .03 && Math.abs(Math.abs(y) - .092) < .075) return 'knee';
+  if (Math.abs(x - .5) < .03 && Math.abs(y) < .16) return 'knee';
   return '';
 }
 
@@ -428,8 +427,9 @@ function motor(on, hz = 20, vol = .22) { // the gun's purr
 const tick = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (err) {} };
 
 /* ---------- screens ---------- */
+const VERSION = 'v8'; // shown on the lobby so anyone can tell which page they are looking at. Bump it with CHANGELOG.md and a tag.
 const HEAD = {
-  lobby: ['Maesage · the Tabble', 'One lays on the table and the other… <em>plays</em>.'],
+  lobby: ['Maesage · the Tabble · ' + VERSION, 'One lays on the table and the other… <em>plays</em>.'],
   moles: ['Game 01 — Moles', 'The gun <em>tunes</em> itself.'],
   hogs: ['Game 02 — Hedgehogs', 'Knots with <em>legs</em>.'],
   golf: ['Game 03 — Golf', 'The cup is the <em>knot</em>.'],
@@ -864,7 +864,7 @@ function drawHog(h) {
 }
 
 /* ---------- 03 golf ---------- */
-const HOLES = [{ tee: [-.1, .075], cup: [-.5, -.1], par: 2 }, { tee: [-.5, .1], cup: [.64, .092], par: 3 }, { tee: [.7, -.092], cup: [.3, .092], par: 3 }];
+const HOLES = [{ tee: [-.1, .075], cup: [-.5, -.1], par: 2 }, { tee: [-.5, .1], cup: [.64, .076], par: 3 }, { tee: [.7, -.076], cup: [.3, .086], par: 3 }];
 function startGolf() { G = { kind: 'golf', h: 0, total: 0, par: HOLES.reduce((a, h) => a + h.par, 0), strokes: 0, aim: null, wait: 0, glide: [], rushed: 0 }; tee(); }
 function tee() { const h = HOLES[G.h]; G.ball = { x: h.tee[0], y: h.tee[1], vx: 0, vy: 0, moving: false, sunk: 0 }; G.strokes = 0; G.lip = false; }
 function strike() {
@@ -949,7 +949,7 @@ function drawCall() {
 
 /* ---------- lobby: the path of the adventure, drawn on the back ---------- */
 // where each game sits: the first three are the path Begin plays; Call is at the hand, Flip at the head
-const STOPS = [{ g: 'moles', x: -.5, y: -.095, wide: 'up', tall: 'right' }, { g: 'hogs', x: -.02, y: .08, wide: 'down', tall: 'left' }, { g: 'golf', x: .62, y: .092, wide: 'down', tall: 'left' }, { g: 'call', x: .075, y: -.276, wide: 'up', tall: 'right' }, { g: 'flip', x: -.84, y: 0, wide: 'up', tall: 'right' }];
+const STOPS = [{ g: 'moles', x: -.5, y: -.095, wide: 'up', tall: 'right' }, { g: 'hogs', x: -.02, y: .08, wide: 'down', tall: 'left' }, { g: 'golf', x: .62, y: .076, wide: 'down', tall: 'left' }, { g: 'call', x: .3, y: -.086, wide: 'up', tall: 'right' }, { g: 'flip', x: -.84, y: 0, wide: 'up', tall: 'right' }];
 function pathAt(u) { // 0..1 along the three stops
   const k = clamp(u, 0, .9999) * 2, i = Math.floor(k), t = k - i, a = STOPS[i], b = STOPS[i + 1], e = t * t * (3 - 2 * t);
   return [lerp(a.x, b.x, t), lerp(a.y, b.y, e)];
@@ -1036,7 +1036,7 @@ function update(dt) {
 function bodyXf() { tall ? ctx.setTransform(0, s * dpr, -s * dpr, 0, cx * dpr, cy * dpr) : ctx.setTransform(s * dpr, 0, 0, s * dpr, cx * dpr, cy * dpr); }
 function drawSuit() {
   bodyXf(); const px = 1 / s, room = clamp(.3 + .82 * ROOM, .3, 1), [lx, ly] = toB(L.x, L.y);
-  // the hood has ears, and they are the receiver's state on the figure itself: up when braced, flopped out and flat when settled
+  // the hood has ears, and they are the receiver's state on the page: up when braced, flopped when settled
   const ease = noReading() ? .45 : clamp(1 - S.read, 0, 1), flop = .6 + .5 * ease, twitch = still ? 0 : Math.max(0, Math.sin(S.t * .9) - .985) * 9;
   for (const sy of [-1, 1]) {
     const a = flop - twitch * .25, ex = -.84 - Math.cos(a) * .118, ey = sy * Math.sin(a) * .112;
@@ -1045,38 +1045,39 @@ function drawSuit() {
     ctx.fillStyle = C.fab2; ctx.beginPath(); ctx.ellipse(.006 + .012 * ease, 0, .026 - .008 * ease, .024 + .004 * ease, 0, 0, TAU); ctx.fill();
     ctx.restore();
   }
-  // cloth: one flat neutral, lighter where the lamp reaches. Flat on purpose: a garment drawing, with no modelling and no skin tone.
-  ctx.fillStyle = C.fab0; ctx.fill(SUIT); ctx.save(); ctx.clip(SUIT);
-  ctx.fillStyle = C.fab2; ctx.fillRect(-.02, -.2, .034, .4); // stretch panels, colour-blocked like a wetsuit: waistband, knee gussets, gloves, boots
-  for (const sy of [-1, 1]) { ctx.fillRect(.47, sy * .005, .06, sy * .19); ctx.fillRect(.86, sy * .005, .15, sy * .19); const c = sy * ARM.c(.04); ctx.fillRect(.04, c - .08, .13, .16); }
-  const glow = ctx.createRadialGradient(lx, ly, 0, lx, ly, .5); glow.addColorStop(0, hexA(C.fab1, .85 * room)); glow.addColorStop(1, hexA(C.fab1, 0)); ctx.fillStyle = glow; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
-  ctx.strokeStyle = hexA(C.void, .34); ctx.lineWidth = .03; ctx.lineJoin = 'round'; ctx.stroke(SUIT); // a soft rim: padding, not a cut-out
-  // seams: where the panels meet. Each no-go place is a seam, so the gun's limits are part of the garment.
-  ctx.strokeStyle = hexA(C.ink, .3 * room); ctx.lineWidth = px; ctx.lineCap = 'round'; ctx.beginPath();
-  ctx.moveTo(-.74, 0); ctx.lineTo(-.02, 0); // the zip
-  ctx.moveTo(-.63, -.28); ctx.quadraticCurveTo(-.5, 0, -.63, .28); // yoke and shoulder seams
-  ctx.moveTo(-.7, -.1); ctx.quadraticCurveTo(-.735, 0, -.7, .1); // collar
-  for (const x of [-.02, .014]) { ctx.moveTo(x, -.2); ctx.lineTo(x, .2); } // waistband
-  for (const sy of [-1, 1]) {
-    for (const x of [.47, .53, .86]) { ctx.moveTo(x, sy * .005); ctx.lineTo(x, sy * .195); } // knee gusset, ankle cuff
-    for (const x of [-.3, .04]) { const c = sy * ARM.c(x); ctx.moveTo(x, c - .08); ctx.lineTo(x, c + .08); } // elbow, wrist cuff
-  }
-  ctx.stroke();
-  // cells: dim at rest, brighter under the lamp, swelling with the breath, ringing where the suit hums
-  const golf = G && G.kind === 'golf', br = still ? 0 : Math.sin(S.breath) * (.03 + .05 * (1 - S.read)), dim = new Path2D(), mid = new Path2D(), lit = new Path2D(), hum = new Path2D(), grain = new Path2D();
-  for (const [x, y, lg, sx, sy] of CELLS) {
-    const dl = (x - lx) * (x - lx) + (y - ly) * (y - ly), glow = dl < .2 ? Math.exp(-dl / .03) * room : 0; let r = .0034 * (1 + 3.2 * br * lg) + .0012 * glow, ring = 0;
-    for (const b of bumps) { const d = hyp(x - b.x, y - b.y); if (d < b.r) { const w = 1 - (d / b.r) * (d / b.r); ring = Math.max(ring, w * w * (b.a / .16) * (still ? .6 : .5 + .5 * Math.sin(46 * d - 13 * S.t))); } }
+  // all that shows of the person: a hood and the tops of the shoulders, above the quilt's hem
+  ctx.save(); ctx.beginPath(); ctx.rect(X0, Y0, QX0 + .03 - X0, Y1 - Y0); ctx.clip();
+  ctx.fillStyle = C.fab0; ctx.fill(SUIT); ctx.save(); ctx.clip(SUIT); ctx.strokeStyle = hexA(C.void, .34); ctx.lineWidth = .03; ctx.lineJoin = 'round'; ctx.stroke(SUIT); ctx.restore();
+  ctx.strokeStyle = hexA(C.ink, .7 * room); ctx.lineWidth = 1.5 * px; ctx.stroke(SUIT); ctx.restore();
+  // the quilt: a board for the games. One neutral cloth in patches, stitched.
+  const quilt = new Path2D(); if (quilt.roundRect) quilt.roundRect(QX0, -QY, QX1 - QX0, 2 * QY, .045); else quilt.rect(QX0, -QY, QX1 - QX0, 2 * QY);
+  ctx.fillStyle = C.fab0; ctx.fill(quilt); ctx.save(); ctx.clip(quilt);
+  for (const [x, y, w, h, t] of PATCH) { ctx.fillStyle = t > 0 ? hexA(C.fab1, .16 * t) : hexA(C.void, -.2 * t); ctx.fillRect(x, y, w, h); }
+  // where the person lifts it the cloth is lighter. A soft rise with no edge: there is no outline to get wrong.
+  const br = still ? 0 : Math.sin(S.breath) * (.03 + .05 * (1 - S.read));
+  for (let x = -.56; x < .93; x += .105) { const w = BAG.w(x) * 1.35, lg = Math.exp(-(((x + .3) / .28) ** 2)), a = .3 * room * (BAG.h(x) / .72) * (1 + 4 * br * lg), g = ctx.createRadialGradient(x, 0, 0, x, 0, w); g.addColorStop(0, hexA(C.fab1, a)); g.addColorStop(.55, hexA(C.fab1, a * .55)); g.addColorStop(1, hexA(C.fab1, 0)); ctx.fillStyle = g; ctx.fillRect(x - w, -w, 2 * w, 2 * w); }
+  const glow = ctx.createRadialGradient(lx, ly, 0, lx, ly, .5); glow.addColorStop(0, hexA(C.fab1, .7 * room)); glow.addColorStop(1, hexA(C.fab1, 0)); ctx.fillStyle = glow; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
+  // stitching between the patches, and the hem folded back at the top
+  ctx.strokeStyle = hexA(C.ink, .16 * room); ctx.lineWidth = px; ctx.setLineDash([4 * px, 4 * px]); ctx.beginPath();
+  for (let i = 1; i < 15; i++) { const x = QX0 + i * (QX1 - QX0) / 15; ctx.moveTo(x, -QY); ctx.lineTo(x, QY); } for (let j = 1; j < 6; j++) { const y = -QY + j * 2 * QY / 6; ctx.moveTo(QX0, y); ctx.lineTo(QX1, y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = hexA(C.fab1, .3 * room); ctx.fillRect(QX0, -QY, .05, 2 * QY); ctx.strokeStyle = hexA(C.ink, .28 * room); ctx.beginPath(); ctx.moveTo(QX0 + .05, -QY); ctx.lineTo(QX0 + .05, QY); ctx.stroke();
+  // cells: brighter where the person is, under the lamp, and with the breath; ringing where the quilt hums
+  const golf = G && G.kind === 'golf', dim = new Path2D(), mid = new Path2D(), lit = new Path2D(), hum = new Path2D(), grain = new Path2D();
+  for (const [x, y, up, lg, sx, sy] of CELLS) {
+    const dl = (x - lx) * (x - lx) + (y - ly) * (y - ly), lamp = dl < .2 ? Math.exp(-dl / .03) * room : 0, v = .5 * up + lamp; let r = .0026 + .0012 * up * (1 + 3.2 * br * lg) + .0012 * lamp, ring = 0;
+    if (up > 0) for (const b of bumps) { const d = hyp(x - b.x, y - b.y); if (d < b.r) { const w = 1 - (d / b.r) * (d / b.r); ring = Math.max(ring, w * w * (b.a / .16) * (still ? .6 : .5 + .5 * Math.sin(46 * d - 13 * S.t))); } }
     if (golf) { const m = hyp(sx, sy), len = Math.min(.011, m * .008); if (len > .002) { grain.moveTo(x - sx / m * len, y - sy / m * len); grain.lineTo(x + sx / m * len, y + sy / m * len); continue; } } // on the green the cells lie along the slope, like mown grass
-    const to = ring > .18 ? hum : glow > .55 ? lit : glow > .16 ? mid : dim; r += .0034 * ring; to.moveTo(x + r, y); to.arc(x, y, r, 0, TAU);
+    const to = ring > .18 ? hum : v > .75 ? lit : v > .3 ? mid : dim; r += .0034 * ring; to.moveTo(x + r, y); to.arc(x, y, r, 0, TAU);
   }
-  ctx.fillStyle = hexA(C.ink, .2 * room); ctx.fill(dim); ctx.fillStyle = hexA(C.ink, .4 * room); ctx.fill(mid); ctx.fillStyle = hexA(C.ink, .68 * room); ctx.fill(lit); ctx.fillStyle = hexA(C.ink, .95); ctx.fill(hum);
+  ctx.fillStyle = hexA(C.ink, .13 * room); ctx.fill(dim); ctx.fillStyle = hexA(C.ink, .34 * room); ctx.fill(mid); ctx.fillStyle = hexA(C.ink, .66 * room); ctx.fill(lit); ctx.fillStyle = hexA(C.ink, .95); ctx.fill(hum);
   if (golf) { ctx.strokeStyle = hexA(C.ink, .3 * room); ctx.lineWidth = 1.4 * px; ctx.stroke(grain); }
+  ctx.strokeStyle = hexA(C.void, .3); ctx.lineWidth = .028; ctx.lineJoin = 'round'; ctx.stroke(quilt); // a soft rim: padding, not a cut-out
   ctx.restore();
-  ctx.strokeStyle = hexA(C.ink, .7 * room); ctx.lineWidth = 1.5 * px; ctx.lineJoin = 'round'; ctx.stroke(SUIT);
-  // the pod at the nape: the one powered thing on the suit, and the only place it shows the accent
-  ctx.fillStyle = C.void; ctx.strokeStyle = hexA(C.ink, .55 * room); ctx.lineWidth = px; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(-.655, -.02, .06, .04, .012); else ctx.rect(-.655, -.02, .06, .04); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = hexA(C.accent, S.stopped ? .25 : still ? .9 : .55 + .4 * Math.sin(S.t * 2.2)); ctx.beginPath(); ctx.arc(-.613, 0, .006, 0, TAU); ctx.fill();
+  ctx.strokeStyle = hexA(C.ink, .62 * room); ctx.lineWidth = 1.5 * px; ctx.lineJoin = 'round'; ctx.stroke(quilt);
+  // the pod on the hem: the one powered thing here, and the only place the quilt shows the accent
+  ctx.fillStyle = C.void; ctx.strokeStyle = hexA(C.ink, .55 * room); ctx.lineWidth = px; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(-.645, -.02, .06, .04, .012); else ctx.rect(-.645, -.02, .06, .04); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = hexA(C.accent, S.stopped ? .25 : still ? .9 : .55 + .4 * Math.sin(S.t * 2.2)); ctx.beginPath(); ctx.arc(-.603, 0, .006, 0, TAU); ctx.fill();
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 function drawTable() {
@@ -1094,7 +1095,7 @@ function drawTable() {
 function drawNoGo() { // where the gun will not run: one quiet dashed line, no hatching
   bodyXf(); const px = 1 / s; ctx.strokeStyle = hexA(C.cue, .5); ctx.lineWidth = 1.3 * px; ctx.setLineDash([3 * px, 6 * px]); ctx.lineCap = 'round'; ctx.beginPath();
   ctx.moveTo(-.75, 0); ctx.lineTo(-.03, 0);
-  for (const sy of [-1, 1]) { ctx.moveTo(.5, sy * .092 - .06); ctx.lineTo(.5, sy * .092 + .06); }
+  ctx.moveTo(.5, -.15); ctx.lineTo(.5, .15);
   ctx.stroke(); ctx.setLineDash([]); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 function drawHand() {
