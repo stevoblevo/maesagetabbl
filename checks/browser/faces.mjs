@@ -1,0 +1,14 @@
+import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
+const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
+const p = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage(); const errs = [];
+p.on('pageerror', e => errs.push(e.message));
+await p.goto('file:///home/claude/test/index.html'); await p.waitForTimeout(1000);
+await p.evaluate(() => __maesage.start('hogs')); await p.waitForTimeout(900); await p.mouse.move(700, 430); await p.waitForTimeout(600); await p.screenshot({ path: 'kit-hogs.png' });
+await p.click('#leave'); await p.click('[data-df-tool="face"]'); await p.waitForTimeout(900); await p.screenshot({ path: 'kit-day.png' });
+console.log('day taste', await p.evaluate(() => Depthfield.taste({ log: false }).map(f => f.rule + ':' + f.sample)), await p.evaluate(() => document.documentElement.dataset.theme));
+await p.click('[data-df-tool="face"]'); await p.click('#sheetOpen'); await p.waitForTimeout(400); await p.screenshot({ path: 'kit-sheet.png' });
+await p.evaluate(() => { const i = document.querySelector('#roomIn'); i.value = .3; i.dispatchEvent(new Event('input')); }); await p.click('#contrastIn'); await p.waitForTimeout(300); await p.click('#sheet [data-df-close]'); await p.waitForTimeout(700);
+await p.evaluate(() => __maesage.start('moles')); await p.waitForTimeout(2800); await p.screenshot({ path: 'kit-contrast-dim.png' });
+console.log('contrast taste', await p.evaluate(() => Depthfield.taste({ log: false }).map(f => f.rule + ':' + f.sample)), await p.evaluate(() => document.documentElement.dataset.theme));
+console.log('errors:', errs.length ? errs : 'none');
+await browser.close();

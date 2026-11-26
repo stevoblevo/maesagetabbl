@@ -1,0 +1,13 @@
+import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
+const browser = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
+const p = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+await p.goto('file:///home/claude/test/index.html'); await p.waitForTimeout(500);
+await p.evaluate(() => { __maesage.start('moles'); });
+await p.waitForTimeout(300);
+await p.evaluate(() => { const G = __maesage.G, Z = __maesage.Z; G.next = 99; G.cues.length = 0;
+  G.cues.push({ z: Z[4], set: 3, kind: 'real', age: 1, inv: .8, win: 60, fill: 0, out: 0 });
+  G.cues.push({ z: Z[11], set: 1, kind: 'decoy', age: 1, inv: .8, win: 60, fill: 0, out: 0 });
+  G.cues.push({ z: Z[13], set: 0, kind: 'tease', age: 1, inv: .8, win: 60, fill: 0, out: 0 }); });
+await p.waitForTimeout(500);
+await p.screenshot({ path: 'hum.png', clip: { x: 380, y: 250, width: 820, height: 340 } });
+await browser.close();
