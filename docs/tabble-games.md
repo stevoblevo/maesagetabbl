@@ -25,10 +25,16 @@ The room light is new play: dim it and the back fades while lit spots stay brigh
 
 Not done: Storeybrook and Hypermetapunk. The family plan says day looks reward stillness, print looks reward impact and tempo, night looks reward a light source. That maps onto the games (Hedgehogs, Moles, Golf) and is written up as an issue, not built.
 
-## The body
-The receiver is a height field, seen from above, prone. Every part is a tube along the body: a centre line, a half-width and a height, each a smooth curve through a few measured points (`TORSO`, `LEG`, `ARM` in the page). Parts meet like clay. Shoulder blades, a spine groove and the two glute mounds are added on top.
+## The suit (the page draws no body)
+Bleve called the first figure funky and the second, an anatomical relief in a warm light, creepy. Both were attempts to draw a person. The page now draws the thing the project is about: the suit.
 
-It is drawn twice: a relief lit by a lamp that follows the hand, and fine contour lines over it. It breathes: 19 breaths a minute tense, 7 settled. The suit's hum warps the contours and sends white ripples out.
+- **Shape.** Still a height field seen from above, because the games need one: Golf rolls a ball down it, hedgehogs slide on it, and cues must land on it. But the parts are padded tubes with round ends (`TORSO`, `LEG`, `ARM`, each through `cap()`), straight-sided, with mitten hands and boot feet. No shoulder blades, no glutes, no waist.
+- **Cloth.** One flat neutral, lighter where the lamp reaches. No modelling and no skin tone: the cloth is a mix of the page's two inks, so the only colour on the suit is a setting's.
+- **Seams are the limits.** Every place the gun will not run is a seam or a panel: the zip down the spine, the collar, the knee gussets. Waistband, gussets, gloves and boots are colour-blocked darker, like a wetsuit.
+- **Cells.** A hex grid of haptic cells covers the suit, none on the rim or in the hood. Dim at rest, brighter under the lamp, swelling with the breath over the lungs (19 a minute tense, 7 settled), and ringing white where the suit hums. In Golf the cells lie along the slope like mown grass, so the green can be read.
+- **Pod.** A small unit at the nape with one light: the only place the suit shows the page's accent. It dims when Stop is pressed.
+
+The outline is traced once at load into a single path (`SUIT`), so there is no per-frame relief any more.
 
 ## The receiver's state
 Inferred, labelled inferred, with a confidence figure that dips after every event. Words in order: braced, caffeinated, still, curious, arriving, calm, puddle. The word's width is the state. "Leans" is the inferred preference; matching it settles the receiver about 40% more, and it drifts every 8–12 s.
