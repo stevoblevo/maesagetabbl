@@ -212,6 +212,7 @@ const hex6 = (v, d) => /^#[0-9a-f]{6}$/i.test(v) ? v : d;
 const C = {}, CH = {}; // C: inks for the art. CH: inks for chrome that is drawn on a canvas (the breath trace).
 function readColors() {
   C.void = hex6(css('--art-void'), '#111722'); C.ink = hex6(css('--art-ink'), '#f3ece6'); C.muted = hex6(css('--art-ink-muted'), '#a9a3a8'); C.cue = hex6(css('--art-cue'), '#c9e6ff'); C.danger = hex6(css('--danger'), '#ff8a7a'); C.lamp = hex6(css('--lamp'), '#ffc8a0');
+  C.fab0 = mixHex(C.void, C.ink, .15); C.fab1 = mixHex(C.void, C.ink, .34); C.fab2 = mixHex(C.void, C.ink, .085); // the suit's cloth, unlit and under the lamp; and its darker stretch panels
   C.surface = mixHex(C.void, C.ink, .045); C.raised = mixHex(C.void, C.ink, .1); C.line = mixHex(C.void, C.ink, .17); if (!C.accent) C.accent = hex6(css('--peach'), '#ffb48a');
   const root = getComputedStyle(document.documentElement); CH.muted = root.getPropertyValue('--ink-muted').trim() || C.muted;
 }
@@ -235,9 +236,10 @@ const glyphSvg = s => `<svg viewBox="0 0 16 16" aria-hidden="true" style="color:
 const TONE = { hush: ' df-tag--sea', wave: ' df-tag--violet', wake: '', knead: ' df-tag--rose' }; // Tag tones, one meaning each: the four settings
 $('#legend').innerHTML = SETS.map(s => `<li class="df-tag${TONE[s.id]}" data-set="${s.id}">${glyphSvg(s)}${s.id} ${s.hz}</li>`).join('');
 
-/* ---------- the receiver as a place: a height field, drawn as contour lines ---------- */
+/* ---------- the receiver as a suit: a padded garment with haptic cells, never a body ---------- */
+// The page draws the thing this project is about, the suit, and no skin: flat fabric, seams, and a grid of cells.
 // body space: x runs head (-) to feet (+), y is across. Prone, so their left is +y.
-// Every part is a tube along x: a centre line, a half-width and a height, each a smooth curve through a few measured points.
+// Every part is a padded tube along x: a centre line, a half-width and a height, each a smooth curve through a few points.
 function curve(pts) {
   const n = pts.length;
   return x => {
@@ -249,39 +251,62 @@ function curve(pts) {
   };
 }
 const flat = v => () => v;
-const TORSO = { c: flat(0), w: curve([[-.8, 0], [-.775, .04], [-.72, .046], [-.67, .056], [-.635, .112], [-.6, .182], [-.55, .2], [-.45, .186], [-.3, .162], [-.17, .146], [-.06, .156], [.04, .18], [.11, .174], [.165, .13], [.2, 0]]),
-  h: curve([[-.8, .3], [-.72, .4], [-.67, .46], [-.6, .66], [-.5, .78], [-.35, .74], [-.18, .6], [-.05, .66], [.06, .9], [.13, .8], [.2, .4]]) };
-const LEG = { c: curve([[-.1, .09], [.0, .089], [.3, .085], [.5, .078], [.84, .072], [1, .075]]), w: curve([[.02, 0], [.06, .086], [.2, .092], [.38, .074], [.5, .056], [.6, .065], [.72, .05], [.83, .033], [.9, .04], [.95, .031], [.978, 0]]),
-  h: curve([[.02, .5], [.2, .74], [.4, .62], [.5, .5], [.6, .6], [.75, .44], [.84, .36], [.92, .4], [.978, .25]]) };
-const ARM = { c: curve([[-.75, .14], [-.63, .166], [-.52, .226], [-.3, .266], [-.1, .27], [.03, .262], [.2, .25]]), w: curve([[-.665, 0], [-.63, .05], [-.5, .053], [-.38, .044], [-.29, .036], [-.2, .042], [-.05, .03], [.01, .026], [.06, .037], [.1, .03], [.128, 0]]),
-  h: curve([[-.665, .5], [-.55, .58], [-.4, .5], [-.29, .4], [-.2, .44], [0, .3], [.07, .26], [.128, .15]]) };
+const cap = (f, a, b, ra, rb) => x => { // a tube with round ends, like a sleeve or a mitten
+  if (x <= a || x >= b) return 0; let w = f(x);
+  if (x < a + ra) { const u = (a + ra - x) / ra; w *= Math.sqrt(1 - u * u); }
+  if (x > b - rb) { const u = (x - b + rb) / rb; w *= Math.sqrt(1 - u * u); }
+  return w;
+};
+const TORSO = { c: flat(0), w: cap(curve([[-.9, .046], [-.72, .048], [-.675, .07], [-.635, .14], [-.59, .182], [-.5, .19], [-.3, .181], [-.12, .178], [.02, .179], [.12, .179], [.3, .179]]), -.8, .2, .01, .1),
+  h: curve([[-.9, .36], [-.7, .44], [-.62, .62], [-.5, .72], [-.3, .7], [-.1, .66], [.05, .66], [.3, .64]]) };
+const LEG = { c: curve([[-.4, .09], [-.1, .09], [.0, .089], [.3, .085], [.5, .078], [.84, .072], [1, .075]]), w: cap(curve([[-.4, .09], [-.1, .09], [.1, .091], [.5, .064], [.9, .05], [1.1, .05]]), -.22, .985, .22, .05),
+  h: curve([[-.4, .64], [-.1, .64], [.2, .62], [.5, .52], [.8, .42], [1.1, .36]]) };
+const ARM = { c: curve([[-.75, .14], [-.63, .166], [-.52, .226], [-.3, .266], [-.1, .27], [.03, .262], [.2, .25]]), w: cap(curve([[-.8, .05], [-.6, .052], [-.3, .046], [0, .042], [.3, .042]]), -.675, .14, .05, .042),
+  h: curve([[-.8, .5], [-.5, .5], [-.2, .42], [.3, .32]]) };
 function tube(p, x, y, sgn) { const w = p.w(x); if (w <= 0) return 0; const u = (y - sgn * p.c(x)) / w; return u <= -1 || u >= 1 ? 0 : p.h(x) * Math.pow(1 - u * u, 1.15); }
 function capH(x, y) {
   let q = 0, v;
-  const hx = (x + .835) / .094, hy = y / .074, hu = hx * hx + hy * hy; if (hu < 1) { v = .95 * (1 - hu); q += v * v * v * v; } // head, face in the cradle
+  const hx = (x + .835) / .092, hy = y / .084, hu = hx * hx + hy * hy; if (hu < 1) { v = .95 * (1 - hu); q += v * v * v * v; } // the hood, face in the cradle
   v = tube(TORSO, x, y, 0); q += v * v * v * v;
+  v = .5 * (1 - ((x - .2) * (x - .2) + y * y) / .0016); if (v > 0) q += v * v * v * v; // a gusset, so the inseam ends round
   for (const sgn of [-1, 1]) { v = tube(LEG, x, y, sgn); q += v * v * v * v; v = tube(ARM, x, y, sgn); q += v * v * v * v; }
   if (q <= 0) return 0;
-  let h = Math.sqrt(Math.sqrt(q)), ay = Math.abs(y); // parts meet like clay
-  const k = Math.min(1, h * 3);
-  h += .09 * k * Math.exp(-((x + .47) * (x + .47)) / .005 - ((ay - .095) * (ay - .095)) / .0026); // shoulder blades
-  if (x > -.68 && x < -.02) h -= .1 * k * Math.exp(-(y * y) / .0005) * clamp((x + .68) / .06, 0, 1) * clamp((-.02 - x) / .06, 0, 1); // the spine is a groove
-  if (x > -.01 && x < .2) h -= .26 * k * Math.exp(-(y * y) / .0005) * clamp((x + .01) / .05, 0, 1) * clamp((.2 - x) / .04, 0, 1);
+  let h = Math.sqrt(Math.sqrt(q)); // panels meet like padding
+  if (x > -.68 && x < -.02) h -= .06 * Math.min(1, h * 3) * Math.exp(-(y * y) / .0005) * clamp((x + .68) / .06, 0, 1) * clamp((-.02 - x) / .06, 0, 1); // the zip runs in a channel
   return h > 0 ? h : 0;
 }
-const X0 = -1, X1 = 1, Y0 = -.48, Y1 = .48, GX = 260, GY = 124, NX = GX + 1, DX = (X1 - X0) / GX, DY = (Y1 - Y0) / GY;
-const base = new Float32Array(NX * (GY + 1)), lung = new Float32Array(base.length), Hf = new Float32Array(base.length);
-for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
-  const x = X0 + i * DX, y = Y0 + j * DY, k = j * NX + i;
-  base[k] = capH(x, y); lung[k] = Math.exp(-(((x + .3) / .28) ** 2)) * Math.exp(-((y / .22) ** 2));
-}
+const X0 = -1, X1 = 1, Y0 = -.48, Y1 = .48;
 const onBody = (x, y) => capH(x, y) > .05 ? capH(x, y) : 0;
 function grad(x, y) { const e = .012; let gx = (capH(x + e, y) - capH(x - e, y)) / (2 * e), gy = (capH(x, y + e) - capH(x, y - e)) / (2 * e); const m = hyp(gx, gy); if (m > 1.5) { gx *= 1.5 / m; gy *= 1.5 / m; } return [gx, gy]; }
-const LEVELS = [.06, .17, .28, .39, .5, .61, .72, .83, .93];
 const bumps = []; // the suit humming: {x, y, a, r}
-const reliefCv = document.createElement('canvas'); reliefCv.width = NX; reliefCv.height = GY + 1;
-const reliefCtx = reliefCv.getContext('2d'), reliefImg = reliefCtx.createImageData(NX, GY + 1), relief = reliefImg.data;
-for (let k = 0; k < relief.length; k += 4) { relief[k] = 255; relief[k + 1] = 206; relief[k + 2] = 170; }
+const SUIT = (() => { // the suit's edge, traced once from the field into closed paths
+  const st = .005, lv = .06, nx = Math.round((X1 - X0) / st), ny = Math.round((Y1 - Y0) / st), w = nx + 1, f = new Float32Array(w * (ny + 1));
+  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) f[j * w + i] = capH(X0 + i * st, Y0 + j * st);
+  const pts = new Map(), link = new Map(), join = (a, b) => { for (const [m, n] of [[a, b], [b, a]]) { if (!link.has(m)) link.set(m, []); link.get(m).push(n); } };
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const k = j * w + i, a = f[k], b = f[k + 1], c = f[k + w + 1], d = f[k + w], idx = (a > lv ? 1 : 0) | (b > lv ? 2 : 0) | (c > lv ? 4 : 0) | (d > lv ? 8 : 0);
+    if (idx === 0 || idx === 15) continue;
+    const x = X0 + i * st, y = Y0 + j * st, T = `h${i},${j}`, B = `h${i},${j + 1}`, Lf = `v${i},${j}`, R = `v${i + 1},${j}`;
+    if ((a > lv) !== (b > lv)) pts.set(T, [x + st * (lv - a) / (b - a), y]);
+    if ((d > lv) !== (c > lv)) pts.set(B, [x + st * (lv - d) / (c - d), y + st]);
+    if ((a > lv) !== (d > lv)) pts.set(Lf, [x, y + st * (lv - a) / (d - a)]);
+    if ((b > lv) !== (c > lv)) pts.set(R, [x + st, y + st * (lv - b) / (c - b)]);
+    switch (idx) { case 1: case 14: join(Lf, T); break; case 2: case 13: join(T, R); break; case 3: case 12: join(Lf, R); break; case 4: case 11: join(R, B); break; case 6: case 9: join(T, B); break; case 7: case 8: join(Lf, B); break; case 5: join(Lf, T); join(R, B); break; default: join(T, R); join(Lf, B); }
+  }
+  const path = new Path2D(), seen = new Set();
+  for (const start of link.keys()) {
+    if (seen.has(start)) continue;
+    for (let cur = start, first = true; cur; cur = link.get(cur).find(n => !seen.has(n)), first = false) { seen.add(cur); const q = pts.get(cur); first ? path.moveTo(q[0], q[1]) : path.lineTo(q[0], q[1]); }
+    path.closePath();
+  }
+  return path;
+})();
+// the haptic cells, on a hex grid that straddles the zip: [x, y, how much breath moves it, downhill x, downhill y]
+const CELLS = [];
+for (let r = 0, y = -.465; y < Y1; y += .03, r++) for (let x = X0 + (r % 2 ? .0173 : 0); x < X1; x += .0346) {
+  if (capH(x, y) < .2 || hyp(x + .835, y) < .115) continue; // none on the rim, none in the hood
+  const [gx, gy] = grad(x, y); CELLS.push([x, y, Math.exp(-(((x + .3) / .28) ** 2)) * Math.exp(-((y / .22) ** 2)), -gx, -gy]);
+}
 
 /* ---------- zones on a back ---------- */
 const Z = [];
@@ -1003,33 +1028,41 @@ function update(dt) {
   for (const f of floaters) f.t += dt;
   for (let i = floaters.length - 1; i >= 0; i--) if (floaters[i].t > 1.5) floaters.splice(i, 1);
 }
-function field() {
-  const settle = 1 - S.read, br = still ? 0 : Math.sin(S.breath) * (.03 + .05 * settle);
-  for (let k = 0; k < Hf.length; k++) Hf[k] = base[k] * (1 + br * lung[k]);
-  if (still) return;
-  for (const b of bumps) {
-    const i0 = Math.max(0, Math.floor((b.x - b.r - X0) / DX)), i1 = Math.min(GX, Math.ceil((b.x + b.r - X0) / DX)), j0 = Math.max(0, Math.floor((b.y - b.r - Y0) / DY)), j1 = Math.min(GY, Math.ceil((b.y + b.r - Y0) / DY));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
-      const k = j * NX + i; if (base[k] <= 0) continue;
-      const d = hyp(X0 + i * DX - b.x, Y0 + j * DY - b.y); if (d >= b.r) continue;
-      const w = 1 - (d / b.r) * (d / b.r); Hf[k] += b.a * w * w * Math.sin(46 * d - 13 * S.t);
-    }
-  }
-}
 function bodyXf() { tall ? ctx.setTransform(0, s * dpr, -s * dpr, 0, cx * dpr, cy * dpr) : ctx.setTransform(s * dpr, 0, 0, s * dpr, cx * dpr, cy * dpr); }
-function drawRelief() { // a reflective surface: lit by the lamp, dark away from it
-  const [lx, ly] = toB(L.x, L.y), lz = .42, zs = .2, lr = lampRGB[0], lg = lampRGB[1], lb = lampRGB[2], room = clamp(ROOM / .85, .2, 1.18);
-  for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
-    const k = j * NX + i, h = Hf[k], o = k * 4 + 3;
-    if (h < .004) { relief[o] = 0; continue; }
-    const gx = (Hf[i < GX ? k + 1 : k] - Hf[i > 0 ? k - 1 : k]) / (2 * DX) * zs, gy = (Hf[j < GY ? k + NX : k] - Hf[j > 0 ? k - NX : k]) / (2 * DY) * zs;
-    const dx = lx - (X0 + i * DX), dy = ly - (Y0 + j * DY), dz = lz - h * zs, dl = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    let d = (dz - gx * dx - gy * dy) / (dl * Math.sqrt(gx * gx + gy * gy + 1)); if (d < 0) d = 0;
-    const a = (h < .06 ? h / .06 : 1) * (.075 + .5 * d / (1 + dl * dl * 1.8) + .1 * h);
-    relief[o - 3] = lr; relief[o - 2] = lg; relief[o - 1] = lb; relief[o] = (a > .7 ? 178 : a * 255) * room;
+function drawSuit() {
+  bodyXf(); const px = 1 / s, room = clamp(.3 + .82 * ROOM, .3, 1), [lx, ly] = toB(L.x, L.y);
+  // cloth: one flat neutral, lighter where the lamp reaches. Flat on purpose: a garment drawing, with no modelling and no skin tone.
+  ctx.fillStyle = C.fab0; ctx.fill(SUIT); ctx.save(); ctx.clip(SUIT);
+  ctx.fillStyle = C.fab2; ctx.fillRect(-.02, -.22, .034, .44); // stretch panels, colour-blocked like a wetsuit: waistband, knee gussets, gloves, boots
+  for (const sy of [-1, 1]) { ctx.fillRect(.47, sy * .005, .06, sy * .155); ctx.fillRect(.87, sy * .005, .14, sy * .155); const c = sy * ARM.c(.05); ctx.fillRect(.05, c - .07, .12, .14); }
+  const glow = ctx.createRadialGradient(lx, ly, 0, lx, ly, .5); glow.addColorStop(0, hexA(C.fab1, .85 * room)); glow.addColorStop(1, hexA(C.fab1, 0)); ctx.fillStyle = glow; ctx.fillRect(X0, Y0, X1 - X0, Y1 - Y0);
+  // seams: where the panels meet. Each no-go place is a seam, so the gun's limits are part of the garment.
+  ctx.strokeStyle = hexA(C.ink, .3 * room); ctx.lineWidth = px; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.moveTo(-.74, 0); ctx.lineTo(-.02, 0); // the zip
+  ctx.moveTo(-.63, -.26); ctx.quadraticCurveTo(-.5, 0, -.63, .26); // yoke and shoulder seams
+  ctx.moveTo(-.7, -.1); ctx.quadraticCurveTo(-.735, 0, -.7, .1); // collar
+  for (const x of [-.02, .014]) { ctx.moveTo(x, -.21); ctx.lineTo(x, .21); } // waistband
+  for (const sy of [-1, 1]) {
+    for (const x of [.47, .53, .87]) { ctx.moveTo(x, sy * .005); ctx.lineTo(x, sy * .16); } // knee gusset, ankle cuff
+    for (const x of [-.3, .05]) { const c = sy * ARM.c(x); ctx.moveTo(x, c - .07); ctx.lineTo(x, c + .07); } // elbow, wrist cuff
   }
-  reliefCtx.putImageData(reliefImg, 0, 0);
-  bodyXf(); ctx.imageSmoothingEnabled = true; ctx.drawImage(reliefCv, X0 - DX / 2, Y0 - DY / 2, NX * DX, (GY + 1) * DY); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.stroke();
+  // cells: dim at rest, brighter under the lamp, swelling with the breath, ringing where the suit hums
+  const golf = G && G.kind === 'golf', br = still ? 0 : Math.sin(S.breath) * (.03 + .05 * (1 - S.read)), dim = new Path2D(), mid = new Path2D(), lit = new Path2D(), hum = new Path2D(), grain = new Path2D();
+  for (const [x, y, lg, sx, sy] of CELLS) {
+    const dl = (x - lx) * (x - lx) + (y - ly) * (y - ly), glow = dl < .2 ? Math.exp(-dl / .03) * room : 0; let r = .0034 * (1 + 3.2 * br * lg) + .0012 * glow, ring = 0;
+    for (const b of bumps) { const d = hyp(x - b.x, y - b.y); if (d < b.r) { const w = 1 - (d / b.r) * (d / b.r); ring = Math.max(ring, w * w * (b.a / .16) * (still ? .6 : .5 + .5 * Math.sin(46 * d - 13 * S.t))); } }
+    if (golf) { const m = hyp(sx, sy), len = Math.min(.011, m * .008); if (len > .002) { grain.moveTo(x - sx / m * len, y - sy / m * len); grain.lineTo(x + sx / m * len, y + sy / m * len); continue; } } // on the green the cells lie along the slope, like mown grass
+    const to = ring > .18 ? hum : glow > .55 ? lit : glow > .16 ? mid : dim; r += .0034 * ring; to.moveTo(x + r, y); to.arc(x, y, r, 0, TAU);
+  }
+  ctx.fillStyle = hexA(C.ink, .2 * room); ctx.fill(dim); ctx.fillStyle = hexA(C.ink, .4 * room); ctx.fill(mid); ctx.fillStyle = hexA(C.ink, .68 * room); ctx.fill(lit); ctx.fillStyle = hexA(C.ink, .95); ctx.fill(hum);
+  if (golf) { ctx.strokeStyle = hexA(C.ink, .3 * room); ctx.lineWidth = 1.4 * px; ctx.stroke(grain); }
+  ctx.restore();
+  ctx.strokeStyle = hexA(C.ink, .7 * room); ctx.lineWidth = 1.5 * px; ctx.lineJoin = 'round'; ctx.stroke(SUIT);
+  // the pod at the nape: the one powered thing on the suit, and the only place it shows the accent
+  ctx.fillStyle = C.void; ctx.strokeStyle = hexA(C.ink, .55 * room); ctx.lineWidth = px; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(-.655, -.02, .06, .04, .012); else ctx.rect(-.655, -.02, .06, .04); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = hexA(C.accent, S.stopped ? .25 : still ? .9 : .55 + .4 * Math.sin(S.t * 2.2)); ctx.beginPath(); ctx.arc(-.613, 0, .006, 0, TAU); ctx.fill();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 function drawTable() {
   bodyXf(); const px = 1 / s;
@@ -1048,35 +1081,6 @@ function drawNoGo() { // where the gun will not run: one quiet dashed line, no h
   ctx.moveTo(-.75, 0); ctx.lineTo(-.03, 0);
   for (const sy of [-1, 1]) { ctx.moveTo(.5, sy * .078 - .05); ctx.lineTo(.5, sy * .078 + .05); }
   ctx.stroke(); ctx.setLineDash([]); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-function drawContours() {
-  bodyXf(); const px = 1 / s, [lx, ly] = toB(L.x, L.y);
-  const g = ctx.createRadialGradient(lx, ly, 0, lx, ly, .75); g.addColorStop(0, hexA(C.ink, .95)); g.addColorStop(.5, hexA(C.ink, .5)); g.addColorStop(1, hexA(C.ink, .3));
-  ctx.strokeStyle = g; ctx.lineCap = 'round';
-  for (let li = 0; li < LEVELS.length; li++) {
-    const Lv = LEVELS[li]; ctx.beginPath();
-    for (let j = 0; j < GY; j++) {
-      const y = Y0 + j * DY, r0 = j * NX, r1 = r0 + NX;
-      for (let i = 0; i < GX; i++) {
-        const a = Hf[r0 + i], b = Hf[r0 + i + 1], c = Hf[r1 + i + 1], d = Hf[r1 + i];
-        const idx = (a > Lv ? 1 : 0) | (b > Lv ? 2 : 0) | (c > Lv ? 4 : 0) | (d > Lv ? 8 : 0);
-        if (idx === 0 || idx === 15) continue;
-        const x = X0 + i * DX, tx = x + DX * (Lv - a) / (b - a), ry = y + DY * (Lv - b) / (c - b), bx = x + DX * (Lv - d) / (c - d), ly2 = y + DY * (Lv - a) / (d - a), xr = x + DX, yb = y + DY;
-        switch (idx) {
-          case 1: case 14: ctx.moveTo(x, ly2); ctx.lineTo(tx, y); break;
-          case 2: case 13: ctx.moveTo(tx, y); ctx.lineTo(xr, ry); break;
-          case 3: case 12: ctx.moveTo(x, ly2); ctx.lineTo(xr, ry); break;
-          case 4: case 11: ctx.moveTo(xr, ry); ctx.lineTo(bx, yb); break;
-          case 6: case 9: ctx.moveTo(tx, y); ctx.lineTo(bx, yb); break;
-          case 7: case 8: ctx.moveTo(x, ly2); ctx.lineTo(bx, yb); break;
-          case 5: ctx.moveTo(x, ly2); ctx.lineTo(tx, y); ctx.moveTo(xr, ry); ctx.lineTo(bx, yb); break;
-          case 10: ctx.moveTo(tx, y); ctx.lineTo(xr, ry); ctx.moveTo(x, ly2); ctx.lineTo(bx, yb); break;
-        }
-      }
-    }
-    ctx.globalAlpha = (li === 0 ? .8 : .2 + .22 * (li / LEVELS.length)) * clamp(.3 + .82 * ROOM, .3, 1); ctx.lineWidth = (li === 0 ? 1.5 : 1) * px; ctx.stroke();
-  }
-  ctx.globalAlpha = 1; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 function drawHand() {
   if (!P.inside || S.screen === 'end') return;
@@ -1106,9 +1110,9 @@ function drawFloaters() {
 }
 function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = C.void; ctx.fillRect(0, 0, W, Hh);
-  field(); drawTable(); drawRelief();
+  drawTable(); drawSuit();
   const gun = S.screen === 'table' || (G && (G.kind === 'moles' || G.kind === 'call' || G.kind === 'flip')); if (gun) drawNoGo();
-  drawContours(); drawWeather();
+  drawWeather();
   if (S.stopped) return; // lights out
   if (S.screen === 'lobby' || (S.screen === 'watch' && !G)) drawLobby();
   else if (S.screen === 'table') for (const c of T.cues) drawCue(c);
